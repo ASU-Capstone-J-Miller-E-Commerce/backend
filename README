@@ -1,0 +1,9 @@
+First:
+npm install express mongoose cors dotenv
+
+create .env file and add the field DATABASE_URL=<mongodb_url>
+
+I will provide the url seperately
+
+to run:
+node server.js
