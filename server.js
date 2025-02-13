@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 require('dotenv').config();
 const cors = require('cors');
+const Product = require('./models/product')
 
 // Initialize app
 const app = express();
@@ -17,6 +18,9 @@ mongoose.connect(process.env.DATABASE_URL, {
 }).catch((err) => {
   console.log('Error connecting to MongoDB:', err);
 });
+
+const products = require('./routes/product')
+app.use('/products', products)
 
 // Sample route
 app.get('/', (req, res) => {
