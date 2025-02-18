@@ -1,6 +1,4 @@
-
-
-function makeResponse(status, data = false, logs = false, errors = false) {  //
+export function makeResponse(status, data = false, logs = false, errors = false) {  //
     if (status !== "success" && status !== "expectedFailure") {
         throw new Error("Invalid status: must be string 'success' or 'expectedFailure'");
     }
@@ -28,10 +26,10 @@ function makeResponse(status, data = false, logs = false, errors = false) {  //
     return JSON.stringify(response);
 }
 
-function makeData(data) {
+export function makeData(data) {
     return makeResponse("success", data);
 }
 
-function makeError(errors) {
+export function makeError(errors) {
     return makeResponse("expectedFailure", false, false, errors);
 }
