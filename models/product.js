@@ -1,7 +1,14 @@
 const mongoose = require("mongoose")
-const { double, boolean } = require('webidl-conversions')
 
 const productSchema = new mongoose.Schema({
+    prodId: {
+        type: String, 
+        required: true
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false
+    },
     listDate: {
         type: Date,
         required: true
