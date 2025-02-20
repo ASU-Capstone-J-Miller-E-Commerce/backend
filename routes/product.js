@@ -27,6 +27,7 @@ router.get('/:id', getProduct, (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
     const product = new Product({
+        prodId: req.body.prodId,
         listDate: req.body.listDate,
         availableDate: req.body.availableDate,
         price: req.body.price,
@@ -60,6 +61,10 @@ router.post('/', async (req, res, next) => {
 })
 
 router.patch('/:id', getProduct, async (req, res, next) => {
+    if(req.body.prodId != null)
+    {
+        res.product.prodId = req.body.prodId
+    }
     if(req.body.listDate != null)
     {
         res.product.listDate = req.body.listDate
