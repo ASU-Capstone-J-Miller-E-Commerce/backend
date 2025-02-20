@@ -2,7 +2,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 require('dotenv').config();
 const cors = require('cors');
-const Product = require('./models/product')
 
 // Initialize app
 const app = express();
@@ -24,6 +23,9 @@ app.use('/products', products)
 
 const analytics = require('./routes/analytic')
 app.use('/analytics', analytics)
+
+const accounts = require('./routes/authorization')
+app.use('/account', accounts)
 
 // Sample route
 app.get('/', (req, res) => {
