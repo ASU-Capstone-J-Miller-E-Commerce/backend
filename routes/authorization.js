@@ -4,20 +4,32 @@ const jwt = require('jsonwebtoken');
 const validator = require('validator');
 const user = require('../models/user');
 const router = express.Router();
-const { sendEmail } = require('../sendMail')
+const { sendEmail } = require('../sendMail');
+const { makeData } = require('../response/makeResponse');
 
 
 
 // New User Registration
 router.post('/register', async (req, res) => 
 {
-    const { email, password } = req.body;
-
     try{
+        //This will change when front end is complete for sending requests to backend.
+        //Testing works with JSON format.
+        const { email, password } = req.body.data;
+
         //Check if the entered email is in fact an email address.
-        if(!validator.isEmail(email))
+        if(!validator.isEmail(email) || email.length > 320)
         {
             return res.status(400).json({message: 'Please enter a valid email address.'});
+        }
+        //Password length checks
+        if(password.length < 8)
+        {
+            return res.status(400).json({message: 'Password cannot be fewer than 8 characters long.'});
+        }
+        if( password.length > 64)
+        {
+            return res.status(400).json({message: 'Password cannot be more than 64 characters long.'});
         }
 
         // Check if a user with that email exists in the database.
@@ -36,8 +48,6 @@ router.post('/register', async (req, res) =>
         const newUser = new user( { email, password: passHash } );
 
         await newUser.save();
-
-        res.status(201).json({ message: 'You have registered successfully!'});
 
         const accountEmailNotification = `
         <!DOCTYPE html>
@@ -61,8 +71,10 @@ router.post('/register', async (req, res) =>
         `
 
         sendEmail(email, "Account Created", accountEmailNotification)
+
+        return res.status(201).send(makeData({ message: 'You have registered successfully!'}));
     }catch (ex){
-        res.status(500).json({ message: 'Error. Server might be down or your connetion may be faulty.', error: ex.message});
+        return res.status(500).json({ message: 'Error. Server might be down or your connection may be faulty.', error: ex.message});
     }
 });
 
@@ -97,10 +109,10 @@ router.post('/login', async (req, res) =>
                 expiresIn: '4h' // Duration for the token.
             });
         
-        res.status(200).json({ message: 'Login successful', token});
+        return res.status(200).json({ message: 'Login successful', token});
 
     }catch(ex){
-        res.status(500).json({ message: 'Error. Server might be down or your connetion may be faulty.', error: ex});
+        return res.status(500).json({ message: 'Error. Server might be down or your connetion may be faulty.', error: ex});
     }
 });
 
