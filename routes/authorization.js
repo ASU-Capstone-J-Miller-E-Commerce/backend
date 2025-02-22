@@ -34,7 +34,6 @@ router.post('/register', async (req, res) =>
 
         // Check if a user with that email exists in the database.
         const userExists = await user.findOne({ email: email });
-
         if(userExists)
         {
             //If user is found, return 400
