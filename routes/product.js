@@ -163,7 +163,7 @@ router.patch('/:id', getProduct, async (req, res, next) => {
 router.delete('/:id', getProduct, async (req, res, next) => {
     try {
         await res.product.deleteOne()
-        res.status(201).json(makeResponse('success', [products], ['deleted a product in the database with id: ' + req.params.id], false))
+        res.status(201).json(makeResponse('success', false, ['deleted a product in the database with id: ' + req.params.id], false))
     } catch (err) {
         res.status(500).json(makeError([err.message]))
     }
