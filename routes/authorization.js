@@ -5,8 +5,10 @@ const validator = require('validator');
 const user = require('../models/user');
 const router = express.Router();
 const { sendEmail } = require('../sendMail');
-const { makeData } = require('../response/makeResponse');;
+const { makeData } = require('../response/makeResponse');
 const { makeError, makeResponse } = require('../response/makeResponse');
+require('dotenv').config();
+const jwtSecret = process.env.JWT_SECRET_KEY;
 
 
 
@@ -45,8 +47,7 @@ router.post('/register', async (req, res) =>
         //Int is the salt length to generate, longer value is more secure.
         const passHash = await bcrypt.hash(password, 10);
 
-        const newUser = new user( { email, password: passHash } );
-
+        const newUser = new user( { email: email, password: passHash, role: "User"});
         await newUser.save();
 
         const accountEmailNotification = `
@@ -103,15 +104,13 @@ router.post('/login', async (req, res) =>
         }
 
         //Successful authorization. Create token.
-        const token = jwt.sign(
-            {
-                userId: user._id,
-                email: user.email
-            },{
-                expiresIn: '4h' // Duration for the token.
-            });
-        
-            return res.status(201).json(makeResponse('success', token, ['Login Successful'], false));
+        const token_payload = {
+            userId: user.email,
+            role: user.role,
+        };
+
+        const token = jwt.sign(token_payload, JWT_SECRET_KEY, { expiresIn: '4h'});
+        return res.status(201).json(makeResponse('success', token, ['Login Successful'], false));
 
     }catch(ex){
         res.status(500).json(makeError(['Error: ' + ex.error]));
