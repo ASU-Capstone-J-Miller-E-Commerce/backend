@@ -1,5 +1,6 @@
 const express = require('express')
 const Product = require('../models/product')
+const { makeError, makeResponse } = require('../response/makeResponse');
 const router = express.Router()
 
 
@@ -14,15 +15,15 @@ router.use(function(req, res, next) {
 router.get('/', async (req, res, next) => {
     try {
         const products = await Product.find()
-        res.status(200).json(products)
+        res.status(200).json(makeResponse('success', [products], ['fetched all products from database'], false))
     } catch (err) {
-        res.status(500).json({message: err.message})
+        res.status(500).json(makeError([err.message]))
     }
 })
 
 //get one
 router.get('/:id', getProduct, (req, res, next) => {
-    res.send(res.product)
+    res.send(makeResponse('success', [res.product], ['fetched 1 product from database with id: ' + req.params.id], false))
 })
 
 router.post('/', async (req, res, next) => {
@@ -54,9 +55,9 @@ router.post('/', async (req, res, next) => {
     try {
         const newProduct = await product.save()
         
-        res.status(201).json(newProduct)
+        res.status(201).json(makeResponse('success', [newProduct], ['created a new product in the database'], false))
     } catch (err) {
-        res.status(400).json({message: err.message})
+        res.status(400).json(makeError([err.message]))
     }
 })
 
@@ -153,18 +154,18 @@ router.patch('/:id', getProduct, async (req, res, next) => {
     try {
         const updateProduct = await res.product.save()
 
-        res.json({message: "Product updated successfully"})
+        res.json(makeResponse('success', [updateProduct], ['updated a product in the database'], false))
     } catch (err) {
-        res.status(400).json({message: err.message})
+        res.status(400).json(makeError([err.message]))
     }
 })
 
 router.delete('/:id', getProduct, async (req, res, next) => {
     try {
         await res.product.deleteOne()
-        res.status(201).json({message: 'Successfully deleted product'})
+        res.status(201).json(makeResponse('success', false, ['deleted a product in the database with id: ' + req.params.id], false))
     } catch (err) {
-        res.status(500).json({message: err.message})
+        res.status(500).json(makeError([err.message]))
     }
 })
 
@@ -174,10 +175,10 @@ async function getProduct(req, res, next) {
     try {
         product = await Product.findById(req.params.id)
         if(product == null){
-            return res.status(404).json({ message: 'Cannot find appointment'})
+            return res.status(404).json(makeError(['Cannot find product']))
         }
     } catch (err) {
-        return res.status(500).json({ message: err.message})
+        return res.status(500).json(makeError([err.message]))
     }
 
     res.product = product

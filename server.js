@@ -21,6 +21,9 @@ mongoose.connect(process.env.DATABASE_URL, {
 const products = require('./routes/product')
 app.use('/products', products)
 
+const orders = require('./routes/order')
+app.use('/orders', orders)
+
 const analytics = require('./routes/analytic')
 app.use('/analytics', analytics)
 

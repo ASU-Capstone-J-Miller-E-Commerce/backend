@@ -5,7 +5,8 @@ const validator = require('validator');
 const user = require('../models/user');
 const router = express.Router();
 const { sendEmail } = require('../sendMail');
-const { makeData } = require('../response/makeResponse');
+const { makeData } = require('../response/makeResponse');;
+const { makeError, makeResponse } = require('../response/makeResponse');
 
 
 
@@ -20,7 +21,7 @@ router.post('/register', async (req, res) =>
         //Check if the entered email is in fact an email address.
         if(!validator.isEmail(email) || email.length > 320)
         {
-            return res.status(400).json({message: 'Please enter a valid email address.'});
+            return res.status(400).json(makeError(['Please enter a valid email.']));
         }
         //Password length checks
         if(password.length < 8)
@@ -37,7 +38,7 @@ router.post('/register', async (req, res) =>
         if(userExists)
         {
             //If user is found, return 400
-            return res.status(400).json({message: 'User already exists.'});
+            return res.status(400).json(makeError(['User with that email already exists.']));
         }
 
         //User does not exist! We can register.
@@ -69,11 +70,13 @@ router.post('/register', async (req, res) =>
         </html>
         `
 
+        sendEmail(email, "Account Created", accountEmailNotification);
+        res.status(201).json(makeResponse('success', false, ['You have registered successfully!'], false));
         sendEmail(email, "Account Created", accountEmailNotification)
 
         return res.status(201).send(makeData({ message: 'You have registered successfully!'}));
     }catch (ex){
-        return res.status(500).json({ message: 'Error. Server might be down or your connection may be faulty.', error: ex.message});
+        res.status(500).json(makeError(['Error: ' + ex.error]));
     }
 });
 
@@ -88,7 +91,7 @@ router.post('/login', async (req, res) =>
         if(!user)
         {
             //User not found. Invalid email.
-            return res.status(400).json({ message: 'We do not have an account under that email.'});
+            return res.status(400).json(makeError(['Please enter a valid email.']));
         }
 
         //User found, compare password hashes.
@@ -96,7 +99,7 @@ router.post('/login', async (req, res) =>
         if(!validPassword)
         {
             //Invalid password.
-            return res.status(400).json({ message: 'Invalid username / password.'});
+            return res.status(400).json(makeError(['Invalid Username / Password.']));
         }
 
         //Successful authorization. Create token.
@@ -108,10 +111,10 @@ router.post('/login', async (req, res) =>
                 expiresIn: '4h' // Duration for the token.
             });
         
-        return res.status(200).json({ message: 'Login successful', token});
+            return res.status(201).json(makeResponse('success', token, ['Login Successful'], false));
 
     }catch(ex){
-        return res.status(500).json({ message: 'Error. Server might be down or your connetion may be faulty.', error: ex});
+        res.status(500).json(makeError(['Error: ' + ex.error]));
     }
 });
 

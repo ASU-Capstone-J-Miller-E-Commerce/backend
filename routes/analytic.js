@@ -1,5 +1,6 @@
 const express = require('express')
 const Analytic = require('../models/analytic')
+const { makeError, makeResponse } = require('../response/makeResponse');
 const router = express.Router()
 
 
@@ -14,15 +15,15 @@ router.use(function(req, res, next) {
 router.get('/', async (req, res, next) => {
     try {
         const analytics = await Analytic.find()
-        res.status(200).json(analytics)
+        res.status(200).json(makeResponse('success', [analytics], ['fetched all analytics from database'], false))
     } catch (err) {
-        res.status(500).json({message: err.message})
+        res.status(500).json(makeError([err.message]))
     }
 })
 
 //get one
 router.get('/:id', getAnalytic, (req, res, next) => {
-    res.send(res.analytic)
+    res.send(makeResponse('success', [res.analytic], ['fetched 1 analytic from the database with id: ' + req.params.id], false))
 })
 
 router.post('/', async (req, res, next) => {
@@ -37,9 +38,9 @@ router.post('/', async (req, res, next) => {
     try {
         const newAnalytic = await analytic.save()
         
-        res.status(201).json(newAnalytic)
+        res.status(201).json(makeResponse('success', [newAnalytic], ['created new analytic in the database'], false))
     } catch (err) {
-        res.status(400).json({message: err.message})
+        res.status(400).json(makeError([err.message]))
     }
 })
 
@@ -48,10 +49,10 @@ async function getAnalytic(req, res, next) {
     try {
         analytic = await Analytic.findById(req.params.id)
         if(analytic == null){
-            return res.status(404).json({ message: 'Cannot find appointment'})
+            return res.status(404).json(makeError(['cannot find analytic']))
         }
     } catch (err) {
-        return res.status(500).json({ message: err.message})
+        return res.status(500).json(makeError([err.message]))
     }
 
     res.analytic = analytic
