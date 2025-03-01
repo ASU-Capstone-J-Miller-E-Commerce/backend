@@ -16,19 +16,22 @@ router.use(function(req, res, next) {
 });
 
 //Get ALL Users
-router.get('/users', authUser, authAdmin, async (req, res) =>
+//router.get('/users', authUser, authAdmin, async (req, res) =>
+router.get('/users', async (req, res) =>
 {
     try{
         const users = await User.find();
         res.status(200).json(makeResponse('success', [users], ['Fetched all users from database.'], false));
     }catch(ex)
     {
-        res.status(500).json(makeError(['Error: ' + ex.error]));
+        console.error('Error getting user.', ex);
+        res.status(400).json(makeError(['Error! Something went wrong.']));
     }
 });
 
 //Get ONE User
-router.get('/users/:email', authUser, authAdmin, async (req, res) =>
+//router.get('/users/:email', authUser, authAdmin, async (req, res) =>
+router.get('/users/:email', async (req, res) =>
     {
         try{
             const {email} = req.params;
@@ -36,12 +39,14 @@ router.get('/users/:email', authUser, authAdmin, async (req, res) =>
             res.status(200).json(makeResponse('success', [users], ['Fetched user from database.'], false));
         }catch(ex)
         {
-            res.status(500).json(makeError(['Error: ' + ex.error]));
+            console.error('Error getting user.', ex);
+            res.status(400).json(makeError(['Error! Something went wrong.']));
         }
     });
 
 //Create a new User
-router.post('/users', authUser, authAdmin, async (req, res) =>
+//router.post('/users', authUser, authAdmin, async (req, res) =>
+router.post('/users', async (req, res) =>
 {
     try{
         const { email, password, name, phone, role } = req.body;
@@ -50,12 +55,14 @@ router.post('/users', authUser, authAdmin, async (req, res) =>
         res.status(201).json(makeResponse('success', newUser, ['New user successfully created.'], false));
     }catch(ex)
     {
-        res.status(400).json(makeError(['Error: ' + ex.error]));
+        console.error('Error creating user.', ex);
+        res.status(400).json(makeError(['Error! Something went wrong.']));
     }
 });
 
 //Edit / save User
-router.put('/users/:email', authUser, authAdmin, async (req, res) =>
+//router.put('/users/:email', authUser, authAdmin, async (req, res) =>
+router.put('/users/:email', async (req, res) =>
 {
     try
     {
@@ -96,12 +103,14 @@ router.put('/users/:email', authUser, authAdmin, async (req, res) =>
 
     }catch(ex)
     {
-        res.status(400).json(makeError(['Error: ' + ex.error]));
+        console.error('Error editing user.', ex);
+        res.status(400).json(makeError(['Error! Something went wrong.']));
     }
 });
 
 //Delete User
-router.delete('/users/:email', authUser, authAdmin, async (req, res) =>
+//router.delete('/users/:email', authUser, authAdmin, async (req, res) =>
+router.delete('/users/:email', async (req, res) =>
 {
     try
     {
@@ -115,7 +124,8 @@ router.delete('/users/:email', authUser, authAdmin, async (req, res) =>
 
     }catch(ex)
     {
-        res.status(400).json(makeError(['Error: ' + ex.error]));
+        console.error('Error deleting user.', ex);
+        res.status(400).json(makeError(['Error! Something went wrong.']));
     }
 });
     
