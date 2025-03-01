@@ -50,6 +50,19 @@ router.post('/users', async (req, res) =>
 {
     try{
         const { email, password, firstName, lastName } = req.body;
+        //Password length checks
+        if(!password)
+        {
+            return res.status(400).json(makeError(['Please provide a new password.']));
+        }
+        if(password.length < 8)
+        {
+            return res.status(400).json(makeError(['Password cannot be fewer than 8 characters long.']));
+        }
+        if( password.length > 64)
+        {
+            return res.status(400).json(makeError(['Password cannot be more than 64 characters long.']));
+        }
         const passHash = await bcrypt.hash(password, 10);
         const newUser = new User({email: email, password: passHash, firstName: firstName, lastName: lastName, role: 'User'});
         await newUser.save();
@@ -69,30 +82,16 @@ router.put('/users/:email', async (req, res) =>
     try
     {
         const {userEmail} = req.params;
-        const {newEmail, newPassword, newFirstName, newLastName} = req.body;
+        const {newEmail, newFirstName, newLastName} = req.body;
         const editedUser = await User.findOne({email: userEmail});
 
         if(!editedUser)
         {
             return res.status(404).json(makeError(['User not found.']));
         }
-
         if(newEmail)
         {
             editedUser.email = newEmail;
-        }
-        if(newPassword)
-        {
-            if(newPassword.length < 8)
-            {
-                return res.status(400).json(makeError(['Password cannot be fewer than 8 characters long.']));
-            }
-            if( newPassword.length > 64)
-            {
-                return res.status(400).json(makeError(['Password cannot be more than 64 characters long.']));
-            }
-            const passHash = await bcrypt.hash(password, 10);
-            editedUser.password = passHash;
         }
         if(newFirstName)
         {
