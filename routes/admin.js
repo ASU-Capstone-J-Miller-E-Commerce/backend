@@ -66,7 +66,7 @@ router.post('/users', async (req, res) =>
         const passHash = await bcrypt.hash(password, 10);
         const newUser = new User({email: email, password: passHash, firstName: firstName, lastName: lastName, role: 'User'});
         await newUser.save();
-        res.status(201).json(makeResponse('success', newUser, ['New user successfully created.'], false));
+        res.status(201).json(makeResponse('success', false, ['New user successfully created.'], false));
     }catch(ex)
     {
         console.error(ex);
@@ -104,7 +104,7 @@ router.put('/users/:email', async (req, res) =>
 
         await editedUser.save();
 
-        return res.status(200).json(makeResponse('success', editedUser, ['User edited and saved successfully.'], false));
+        return res.status(200).json(makeResponse('success', false, ['User edited and saved successfully.'], false));
 
     }catch(ex)
     {
@@ -146,7 +146,7 @@ router.put('/users/resetPassword/:email', async (req, res) =>
 
         await editedUser.save();
 
-        return res.status(200).json(makeResponse('success', editedUser, ['User edited and saved successfully.'], false));
+        return res.status(200).json(makeResponse('success', false, ['User edited and saved successfully.'], false));
 
     }catch(ex)
     {
