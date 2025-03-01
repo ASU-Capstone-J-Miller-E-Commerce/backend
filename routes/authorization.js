@@ -134,7 +134,8 @@ const authUser = (req, res, next) =>
         next();
     }catch(ex)
     {
-        res.status(401).json(makeError(['Invalid Token.']));
+        console.error(ex);
+        res.status(400).json(makeError(['Something went wrong.']));
     }
 };
 

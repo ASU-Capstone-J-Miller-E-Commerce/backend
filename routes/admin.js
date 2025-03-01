@@ -49,8 +49,9 @@ router.get('/users/:email', async (req, res) =>
 router.post('/users', async (req, res) =>
 {
     try{
-        const { email, password, name, phone, role } = req.body;
-        const newUser = new User({email, password, name, phone, role});
+        const { email, password, firstName, lastName } = req.body;
+        const passHash = await bcrypt.hash(password, 10);
+        const newUser = new User({email: email, password: passHash, firstName: firstName, lastName: lastName, role: 'User'});
         await newUser.save();
         res.status(201).json(makeResponse('success', newUser, ['New user successfully created.'], false));
     }catch(ex)
@@ -67,7 +68,7 @@ router.put('/users/:email', async (req, res) =>
     try
     {
         const {userEmail} = req.params;
-        const {newEmail, newPassword, newName, newPhone, newRole} = req.body;
+        const {newEmail, newPassword, newFirstName, newLastName, newRole} = req.body;
         const editedUser = await User.findOne({email: userEmail});
 
         if(!editedUser)
@@ -84,13 +85,13 @@ router.put('/users/:email', async (req, res) =>
             const passHash = await bcrypt.hash(password, 10);
             editedUser.password = passHash;
         }
-        if(newName)
+        if(newFirstName)
         {
-            editedUser.name = newName;
+            editedUser.firstName = newFirstName;
         }
-        if(newPhone)
+        if(newLastName)
         {
-            editedUser.phone = newPhone;
+            editedUser.lastName = newLastName;
         }
         if(newRole)
         {
