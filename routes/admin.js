@@ -84,8 +84,7 @@ router.put('/users/:email', async (req, res) =>
         const {email} = req.params;
         const {newEmail, newFirstName, newLastName} = req.body;
         const editedUser = await User.findOne({email: email});
-        console.log("hit")
-        console.log(req.params)
+
         if(!editedUser)
         {
             return res.status(404).json(makeError(['User not found.']));
