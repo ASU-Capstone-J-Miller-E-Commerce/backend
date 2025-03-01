@@ -18,20 +18,20 @@ mongoose.connect(process.env.DATABASE_URL, {
   console.log('Error connecting to MongoDB:', err);
 });
 
-const products = require('./routes/product')
-app.use('/products', products)
+const products = require('./routes/product');
+app.use('/products', products);
 
-const orders = require('./routes/order')
-app.use('/orders', orders)
+const orders = require('./routes/order');
+app.use('/orders', orders);
 
-const analytics = require('./routes/analytic')
-app.use('/analytics', analytics)
+const analytics = require('./routes/analytic');
+app.use('/analytics', analytics);
 
-const accounts = require('./routes/authorization')
-app.use('/account', accounts)
+const accounts = require('./routes/authorization');
+app.use('/account', accounts);
 
-const adminOnly = requre('.routes/admin')
-app.use('/admin', adminOnly)
+const adminOnly = require('./routes/admin');
+app.use('/admin', adminOnly);
 
 // Sample route
 app.get('/', (req, res) => {
