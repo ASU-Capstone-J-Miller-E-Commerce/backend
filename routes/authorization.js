@@ -28,11 +28,11 @@ router.post('/register', async (req, res) =>
         //Password length checks
         if(password.length < 8)
         {
-            return res.status(400).json({message: 'Password cannot be fewer than 8 characters long.'});
+            return res.status(400).json(makeError(['Password cannot be fewer than 8 characters long.']));
         }
         if( password.length > 64)
         {
-            return res.status(400).json({message: 'Password cannot be more than 64 characters long.'});
+            return res.status(400).json(makeError(['Password cannot be more than 64 characters long.']));
         }
 
         // Check if a user with that email exists in the database.

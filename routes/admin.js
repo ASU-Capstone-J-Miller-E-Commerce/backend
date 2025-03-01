@@ -20,8 +20,8 @@ router.use(function(req, res, next) {
 router.get('/users', async (req, res) =>
 {
     try{
-        const users = await User.find();
-        res.status(200).json(makeResponse('success', users, ['Fetched all users from database.'], false));
+        const users = await User.find({}, {password: 0});
+        res.status(200).json(makeResponse('success', [users], ['Fetched all users from database.'], false));
     }catch(ex)
     {
         console.error(ex);
@@ -35,7 +35,7 @@ router.get('/users/:email', async (req, res) =>
     {
         try{
             const {userEmail} = req.params;
-            const users = await User.findOne({email: userEmail});
+            const users = await User.findOne({email: userEmail}, {password: 0});
             res.status(200).json(makeResponse('success', [users], ['Fetched user from database.'], false));
         }catch(ex)
         {
@@ -61,6 +61,7 @@ router.post('/users', async (req, res) =>
     }
 });
 
+
 //Edit / save User
 //router.put('/users/:email', authUser, authAdmin, async (req, res) =>
 router.put('/users/:email', async (req, res) =>
@@ -68,7 +69,7 @@ router.put('/users/:email', async (req, res) =>
     try
     {
         const {userEmail} = req.params;
-        const {newEmail, newPassword, newFirstName, newLastName, newRole} = req.body;
+        const {newEmail, newPassword, newFirstName, newLastName} = req.body;
         const editedUser = await User.findOne({email: userEmail});
 
         if(!editedUser)
@@ -93,9 +94,50 @@ router.put('/users/:email', async (req, res) =>
         {
             editedUser.lastName = newLastName;
         }
-        if(newRole)
+
+        await editedUser.save();
+
+        return res.status(200).json(makeResponse('success', editedUser, ['User edited and saved successfully.'], false));
+
+    }catch(ex)
+    {
+        console.error(ex);
+        res.status(400).json(makeError(['Something went wrong.']));
+    }
+});
+
+//Change password
+//router.put('/users/:email', authUser, authAdmin, async (req, res) =>
+router.put('/users/resetPassword/:email', async (req, res) =>
+{
+    try
+    {
+        const {userEmail} = req.params;
+        const {newPassword} = req.body;
+        const editedUser = await User.findOne({email: userEmail});
+
+        if(!editedUser)
         {
-            editedUser.role = newRole;
+            return res.status(404).json(makeError(['User not found.']));
+        }
+        //Password length checks
+        if(!newPassword)
+        {
+            return res.status(400).json(makeError(['Please provide a new password.']));
+        }
+        if(newPassword.length < 8)
+        {
+            return res.status(400).json(makeError(['Password cannot be fewer than 8 characters long.']));
+        }
+        if( newPassword.length > 64)
+        {
+            return res.status(400).json(makeError(['Password cannot be more than 64 characters long.']));
+        }
+
+        if(newPassword)
+        {
+            const passHash = await bcrypt.hash(password, 10);
+            editedUser.password = passHash;
         }
 
         await editedUser.save();
