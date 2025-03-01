@@ -83,6 +83,14 @@ router.put('/users/:email', async (req, res) =>
         }
         if(newPassword)
         {
+            if(newPassword.length < 8)
+            {
+                return res.status(400).json(makeError(['Password cannot be fewer than 8 characters long.']));
+            }
+            if( newPassword.length > 64)
+            {
+                return res.status(400).json(makeError(['Password cannot be more than 64 characters long.']));
+            }
             const passHash = await bcrypt.hash(password, 10);
             editedUser.password = passHash;
         }
@@ -134,11 +142,8 @@ router.put('/users/resetPassword/:email', async (req, res) =>
             return res.status(400).json(makeError(['Password cannot be more than 64 characters long.']));
         }
 
-        if(newPassword)
-        {
-            const passHash = await bcrypt.hash(password, 10);
-            editedUser.password = passHash;
-        }
+        const passHash = await bcrypt.hash(password, 10);
+        editedUser.password = passHash;
 
         await editedUser.save();
 
