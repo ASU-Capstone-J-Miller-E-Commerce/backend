@@ -16,7 +16,7 @@ router.use(function(req, res, next) {
 });
 
 //Get ALL Users
-router.get('/', authUser, authAdmin, async (req, res) =>
+router.get('/users', authUser, authAdmin, async (req, res) =>
 {
     try{
         const users = await User.find();
@@ -28,12 +28,12 @@ router.get('/', authUser, authAdmin, async (req, res) =>
 });
 
 //Get ONE User
-router.get('/:email', authUser, authAdmin, async (req, res) =>
+router.get('/users/:email', authUser, authAdmin, async (req, res) =>
     {
         try{
             const {email} = req.params;
             const users = await User.findOne({email});
-            res.status(200).json(makeResponse('success', [users], ['Fetched all users from database.'], false));
+            res.status(200).json(makeResponse('success', [users], ['Fetched user from database.'], false));
         }catch(ex)
         {
             res.status(500).json(makeError(['Error: ' + ex.error]));
@@ -41,7 +41,7 @@ router.get('/:email', authUser, authAdmin, async (req, res) =>
     });
 
 //Create a new User
-router.post('/', authUser, authAdmin, async (req, res) =>
+router.post('/users', authUser, authAdmin, async (req, res) =>
 {
     try{
         const { email, password, name, phone, role } = req.body;
@@ -55,7 +55,7 @@ router.post('/', authUser, authAdmin, async (req, res) =>
 });
 
 //Edit / save User
-router.put('/:email', authUser, authAdmin, async (req, res) =>
+router.put('/users/:email', authUser, authAdmin, async (req, res) =>
 {
     try
     {
@@ -101,7 +101,7 @@ router.put('/:email', authUser, authAdmin, async (req, res) =>
 });
 
 //Delete User
-router.delete('/:email', authUser, authAdmin, async (req, res) =>
+router.delete('/users/:email', authUser, authAdmin, async (req, res) =>
 {
     try
     {

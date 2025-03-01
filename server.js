@@ -30,6 +30,9 @@ app.use('/analytics', analytics)
 const accounts = require('./routes/authorization')
 app.use('/account', accounts)
 
+const adminOnly = requre('.routes/admin')
+app.use('/admin', adminOnly)
+
 // Sample route
 app.get('/', (req, res) => {
   res.send('Hello World');
