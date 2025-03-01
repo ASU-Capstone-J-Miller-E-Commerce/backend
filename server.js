@@ -8,6 +8,25 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// log all requests for debugging purposes
+app.use((req, res, next) => {
+  console.log(`Request: ${req.method} ${req.url}`);
+  console.log('Request Headers:', req.headers);
+  console.log('Request Body:', req.body);
+
+  // capture the original send method
+  const originalSend = res.send;
+
+  // override the send method to log the response
+  res.send = function (body) {
+    console.log('Response Status:', res.statusCode);
+    console.log('Response Body:', body);
+    originalSend.call(this, body);
+  };
+
+  next();
+});
+
 // Connect to MongoDB
 mongoose.connect(process.env.DATABASE_URL, {
   useNewUrlParser: true,
