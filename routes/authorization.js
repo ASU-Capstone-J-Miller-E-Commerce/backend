@@ -146,4 +146,6 @@ const authAdmin = (req, res, next) =>
     next();
 };
 
-module.exports = { authUser , authAdmin , router };
+module.exports = router;
+module.exports.authUser = authUser;
+module.exports.authAdmin = authAdmin;

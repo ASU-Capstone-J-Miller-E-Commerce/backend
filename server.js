@@ -8,6 +8,25 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// log all requests for debugging purposes
+app.use((req, res, next) => {
+  console.log(`Request: ${req.method} ${req.url}`);
+  console.log('Request Headers:', req.headers);
+  console.log('Request Body:', req.body);
+
+  // capture the original send method
+  const originalSend = res.send;
+
+  // override the send method to log the response
+  res.send = function (body) {
+    console.log('Response Status:', res.statusCode);
+    console.log('Response Body:', body);
+    originalSend.call(this, body);
+  };
+
+  next();
+});
+
 // Connect to MongoDB
 mongoose.connect(process.env.DATABASE_URL, {
   useNewUrlParser: true,
@@ -18,20 +37,20 @@ mongoose.connect(process.env.DATABASE_URL, {
   console.log('Error connecting to MongoDB:', err);
 });
 
-const products = require('./routes/product')
-app.use('/products', products)
+const products = require('./routes/product');
+app.use('/products', products);
 
-const orders = require('./routes/order')
-app.use('/orders', orders)
+const orders = require('./routes/order');
+app.use('/orders', orders);
 
-const analytics = require('./routes/analytic')
-app.use('/analytics', analytics)
+const analytics = require('./routes/analytic');
+app.use('/analytics', analytics);
 
-const accounts = require('./routes/authorization')
-app.use('/account', accounts)
+const accounts = require('./routes/authorization');
+app.use('/account', accounts);
 
-const adminOnly = requre('.routes/admin')
-app.use('/admin', adminOnly)
+const adminOnly = require('./routes/admin');
+app.use('/admin', adminOnly);
 
 // Sample route
 app.get('/', (req, res) => {
