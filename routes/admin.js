@@ -24,8 +24,8 @@ router.get('/users', async (req, res) =>
         res.status(200).json(makeResponse('success', [users], ['Fetched all users from database.'], false));
     }catch(ex)
     {
-        console.error('Error getting user.', ex);
-        res.status(400).json(makeError(['Error! Something went wrong.']));
+        console.error(ex);
+        res.status(400).json(makeError(['Something went wrong.']));
     }
 });
 
@@ -34,13 +34,13 @@ router.get('/users', async (req, res) =>
 router.get('/users/:email', async (req, res) =>
     {
         try{
-            const {email} = req.params;
-            const users = await User.findOne({email});
+            const {userEmail} = req.params;
+            const users = await User.findOne({email: userEmail});
             res.status(200).json(makeResponse('success', [users], ['Fetched user from database.'], false));
         }catch(ex)
         {
-            console.error('Error getting user.', ex);
-            res.status(400).json(makeError(['Error! Something went wrong.']));
+            console.error(ex);
+            res.status(400).json(makeError(['Something went wrong.']));
         }
     });
 
@@ -55,8 +55,8 @@ router.post('/users', async (req, res) =>
         res.status(201).json(makeResponse('success', newUser, ['New user successfully created.'], false));
     }catch(ex)
     {
-        console.error('Error creating user.', ex);
-        res.status(400).json(makeError(['Error! Something went wrong.']));
+        console.error(ex);
+        res.status(400).json(makeError(['Something went wrong.']));
     }
 });
 
@@ -66,9 +66,9 @@ router.put('/users/:email', async (req, res) =>
 {
     try
     {
-        const {email} = req.params;
+        const {userEmail} = req.params;
         const {newEmail, newPassword, newName, newPhone, newRole} = req.body;
-        const editedUser = await User.findOne({email});
+        const editedUser = await User.findOne({email: userEmail});
 
         if(!editedUser)
         {
@@ -103,8 +103,8 @@ router.put('/users/:email', async (req, res) =>
 
     }catch(ex)
     {
-        console.error('Error editing user.', ex);
-        res.status(400).json(makeError(['Error! Something went wrong.']));
+        console.error(ex);
+        res.status(400).json(makeError(['Something went wrong.']));
     }
 });
 
@@ -114,8 +114,8 @@ router.delete('/users/:email', async (req, res) =>
 {
     try
     {
-        const {email} = req.params;
-        const deletedUser = await User.findOneAndDelete({ email });
+        const {userEmail} = req.params;
+        const deletedUser = await User.findOneAndDelete({ email: userEmail });
         if(!deletedUser)
         {
             return res.status(404).json(makeError(['User not found.']));
@@ -124,8 +124,8 @@ router.delete('/users/:email', async (req, res) =>
 
     }catch(ex)
     {
-        console.error('Error deleting user.', ex);
-        res.status(400).json(makeError(['Error! Something went wrong.']));
+        console.error(ex);
+        res.status(400).json(makeError(['Something went wrong.']));
     }
 });
     

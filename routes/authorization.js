@@ -74,7 +74,8 @@ router.post('/register', async (req, res) =>
         sendEmail(email, "Account Created", accountEmailNotification);
         res.status(201).json(makeResponse('success', false, ['You have registered successfully!'], false));
     }catch (ex){
-        res.status(500).json(makeError(['Error: ' + ex.error]));
+        console.error(ex);
+        res.status(400).json(makeError(['Something went wrong.']));
     }
 });
 
@@ -109,7 +110,8 @@ router.post('/login', async (req, res) =>
         const token = jwt.sign(token_payload, jwtSecret, { expiresIn: '4h'});
         return res.status(201).json(makeResponse('success', token, ['Login Successful'], false));
     }catch(ex){
-        res.status(500).json(makeError(['Error: ' + ex.error]));
+        console.error(ex);
+        res.status(400).json(makeError(['Something went wrong.']));
     }
 });
 
