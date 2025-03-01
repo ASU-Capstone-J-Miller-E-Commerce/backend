@@ -1,14 +1,14 @@
-const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const validator = require('validator');
-const user = require('../models/user');
-const router = express.Router();
-const { sendEmail } = require('../sendMail');
-const { makeData } = require('../response/makeResponse');
-const { makeError, makeResponse } = require('../response/makeResponse');
-require('dotenv').config();
-const jwtSecret = process.env.JWT_SECRET_KEY;
+const express = require('express')
+const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
+const validator = require('validator')
+const user = require('../models/user')
+const router = express.Router()
+const { sendEmail } = require('../sendMail')
+const { makeData } = require('../response/makeResponse')
+const { makeError, makeResponse } = require('../response/makeResponse')
+require('dotenv').config()
+const jwtSecret = process.env.JWT_SECRET_KEY
 
 
 
@@ -73,9 +73,6 @@ router.post('/register', async (req, res) =>
 
         sendEmail(email, "Account Created", accountEmailNotification);
         res.status(201).json(makeResponse('success', false, ['You have registered successfully!'], false));
-        sendEmail(email, "Account Created", accountEmailNotification)
-
-        return res.status(201).send(makeData({ message: 'You have registered successfully!'}));
     }catch (ex){
         res.status(500).json(makeError(['Error: ' + ex.error]));
     }
@@ -96,7 +93,7 @@ router.post('/login', async (req, res) =>
         }
 
         //User found, compare password hashes.
-        const validPassword = await bcrtypt.compare(password, user.password);
+        const validPassword = await bcrypt.compare(password, user.password);
         if(!validPassword)
         {
             //Invalid password.
@@ -109,12 +106,44 @@ router.post('/login', async (req, res) =>
             role: user.role,
         };
 
-        const token = jwt.sign(token_payload, JWT_SECRET_KEY, { expiresIn: '4h'});
+        const token = jwt.sign(token_payload, jwtSecret, { expiresIn: '4h'});
         return res.status(201).json(makeResponse('success', token, ['Login Successful'], false));
-
     }catch(ex){
         res.status(500).json(makeError(['Error: ' + ex.error]));
     }
 });
 
-module.exports = router;
+//Authenticate User
+const authUser = (req, res, next) => 
+{
+    //Update when logic for passing to backend is complete.
+    const token = req.header('Authorization');
+
+    if(!token)
+    {
+        return res.status(401).json(makeError(['Access Denied. Invalid Token.']));
+    }
+
+    try
+    {
+        const userToken = token.split(' ')[1];
+        const validated = jwt.verify(userToken, jwtSecret);
+        req.user = validated;
+        next();
+    }catch(ex)
+    {
+        res.status(401).json(makeError(['Invalid Token.']));
+    }
+};
+
+//Admin auth 
+const authAdmin = (req, res, next) => 
+{
+    if(!req.user || req.user.role !== 'Admin')
+    {
+        return res.status(401).json(makeError(['Access Denied. Admin Only Resource.']));
+    }
+    next();
+};
+
+module.exports = { authUser , authAdmin , router };
