@@ -34,8 +34,8 @@ router.get('/users', async (req, res) =>
 router.get('/users/:email', async (req, res) =>
     {
         try{
-            const {userEmail} = req.params;
-            const users = await User.findOne({email: userEmail}, {password: 0});
+            const {email} = req.params;
+            const users = await User.findOne({email: email}, {password: 0});
             res.status(200).json(makeResponse('success', [users], ['Fetched user from database.'], false));
         }catch(ex)
         {
@@ -81,10 +81,11 @@ router.put('/users/:email', async (req, res) =>
 {
     try
     {
-        const {userEmail} = req.params;
+        const {email} = req.params;
         const {newEmail, newFirstName, newLastName} = req.body;
-        const editedUser = await User.findOne({email: userEmail});
-
+        const editedUser = await User.findOne({email: email});
+        console.log("hit")
+        console.log(req.params)
         if(!editedUser)
         {
             return res.status(404).json(makeError(['User not found.']));
@@ -119,9 +120,9 @@ router.put('/users/resetPassword/:email', async (req, res) =>
 {
     try
     {
-        const {userEmail} = req.params;
+        const {email} = req.params;
         const {newPassword} = req.body;
-        const editedUser = await User.findOne({email: userEmail});
+        const editedUser = await User.findOne({email: email});
 
         if(!editedUser)
         {
@@ -161,8 +162,8 @@ router.delete('/users/:email', async (req, res) =>
 {
     try
     {
-        const {userEmail} = req.params;
-        const deletedUser = await User.findOneAndDelete({ email: userEmail });
+        const {email} = req.params;
+        const deletedUser = await User.findOneAndDelete({ email: email });
         if(!deletedUser)
         {
             return res.status(404).json(makeError(['User not found.']));
