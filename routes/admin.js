@@ -107,7 +107,7 @@ router.put('/users/:email', async (req, res) =>
 });
 
 //Change password
-//router.put('/users/:email', authUser, authAdmin, async (req, res) =>
+//router.put('/users/resetPassword/:email', authUser, authAdmin, async (req, res) =>
 router.put('/users/resetPassword/:email', async (req, res) =>
 {
     try
