@@ -21,7 +21,7 @@ router.get('/users', async (req, res) =>
 {
     try{
         const users = await User.find();
-        res.status(200).json(makeResponse('success', [users], ['Fetched all users from database.'], false));
+        res.status(200).json(makeResponse('success', users, ['Fetched all users from database.'], false));
     }catch(ex)
     {
         console.error(ex);
