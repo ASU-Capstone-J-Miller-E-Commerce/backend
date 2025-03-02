@@ -141,7 +141,7 @@ router.put('/users/resetPassword/:email', async (req, res) =>
             return res.status(400).json(makeError(['Password cannot be more than 64 characters long.']));
         }
 
-        const passHash = await bcrypt.hash(password, 10);
+        const passHash = await bcrypt.hash(newPassword, 10);
         editedUser.password = passHash;
 
         await editedUser.save();
