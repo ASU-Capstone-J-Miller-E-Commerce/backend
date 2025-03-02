@@ -1,29 +1,42 @@
-const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const validator = require('validator');
-const user = require('../models/user');
-const router = express.Router();
-const { sendEmail } = require('../sendMail');
-const { makeError, makeResponse } = require('../response/makeResponse');
+const express = require('express')
+const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
+const validator = require('validator')
+const user = require('../models/user')
+const router = express.Router()
+const { sendEmail } = require('../sendMail')
+const { makeData } = require('../response/makeResponse')
+const { makeError, makeResponse } = require('../response/makeResponse')
+require('dotenv').config()
+const jwtSecret = process.env.JWT_SECRET_KEY
 
 
 
 // New User Registration
 router.post('/register', async (req, res) => 
 {
-    const { email, password } = req.body;
-
     try{
+        //This will change when front end is complete for sending requests to backend.
+        //Testing works with JSON format.
+        const { email, password } = req.body.data;
+
         //Check if the entered email is in fact an email address.
-        if(!validator.isEmail(email))
+        if(!validator.isEmail(email) || email.length > 320)
         {
             return res.status(400).json(makeError(['Please enter a valid email.']));
+        }
+        //Password length checks
+        if(password.length < 8)
+        {
+            return res.status(400).json(makeError(['Password cannot be fewer than 8 characters long.']));
+        }
+        if( password.length > 64)
+        {
+            return res.status(400).json(makeError(['Password cannot be more than 64 characters long.']));
         }
 
         // Check if a user with that email exists in the database.
         const userExists = await user.findOne({ email: email });
-
         if(userExists)
         {
             //If user is found, return 400
@@ -34,8 +47,7 @@ router.post('/register', async (req, res) =>
         //Int is the salt length to generate, longer value is more secure.
         const passHash = await bcrypt.hash(password, 10);
 
-        const newUser = new user( { email, password: passHash } );
-
+        const newUser = new user( { email: email, password: passHash, role: "User"});
         await newUser.save();
 
         const accountEmailNotification = `
@@ -62,7 +74,8 @@ router.post('/register', async (req, res) =>
         sendEmail(email, "Account Created", accountEmailNotification);
         res.status(201).json(makeResponse('success', false, ['You have registered successfully!'], false));
     }catch (ex){
-        res.status(500).json(makeError(['Error: ' + ex.error]));
+        console.error(ex);
+        res.status(400).json(makeError(['Something went wrong.']));
     }
 });
 
@@ -81,7 +94,7 @@ router.post('/login', async (req, res) =>
         }
 
         //User found, compare password hashes.
-        const validPassword = await bcrtypt.compare(password, user.password);
+        const validPassword = await bcrypt.compare(password, user.password);
         if(!validPassword)
         {
             //Invalid password.
@@ -89,19 +102,53 @@ router.post('/login', async (req, res) =>
         }
 
         //Successful authorization. Create token.
-        const token = jwt.sign(
-            {
-                userId: user._id,
-                email: user.email
-            },{
-                expiresIn: '4h' // Duration for the token.
-            });
-        
-            res.status(201).json(makeResponse('success', token, ['Login Successful'], false));
+        const token_payload = {
+            userId: user.email,
+            role: user.role,
+        };
 
+        const token = jwt.sign(token_payload, jwtSecret, { expiresIn: '4h'});
+        return res.status(201).json(makeResponse('success', token, ['Login Successful'], false));
     }catch(ex){
-        res.status(500).json(makeError(['Error: ' + ex.error]));
+        console.error(ex);
+        res.status(400).json(makeError(['Something went wrong.']));
     }
 });
 
+//Authenticate User
+const authUser = (req, res, next) => 
+{
+    //Update when logic for passing to backend is complete.
+    const token = req.header('Authorization');
+
+    if(!token)
+    {
+        return res.status(401).json(makeError(['Access Denied. Invalid Token.']));
+    }
+
+    try
+    {
+        const userToken = token.split(' ')[1];
+        const validated = jwt.verify(userToken, jwtSecret);
+        req.user = validated;
+        next();
+    }catch(ex)
+    {
+        console.error(ex);
+        res.status(400).json(makeError(['Something went wrong.']));
+    }
+};
+
+//Admin auth 
+const authAdmin = (req, res, next) => 
+{
+    if(!req.user || req.user.role !== 'Admin')
+    {
+        return res.status(401).json(makeError(['Access Denied. Admin Only Resource.']));
+    }
+    next();
+};
+
 module.exports = router;
+module.exports.authUser = authUser;
+module.exports.authAdmin = authAdmin;
