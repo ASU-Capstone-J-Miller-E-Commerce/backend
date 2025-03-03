@@ -1,5 +1,5 @@
 const express = require('express')
-const Product = require('../models/product')
+const Cue = require('../models/cue')
 const { makeError, makeResponse } = require('../response/makeResponse');
 const router = express.Router()
 
@@ -14,20 +14,20 @@ router.use(function(req, res, next) {
 //get all
 router.get('/', async (req, res, next) => {
     try {
-        const products = await Product.find()
-        res.status(200).json(makeResponse('success', [products], ['fetched all products from database'], false))
+        const cues = await Cue.find()
+        res.status(200).json(makeResponse('success', [cues], ['fetched all cues from database'], false))
     } catch (err) {
         res.status(500).json(makeError([err.message]))
     }
 })
 
 //get one
-router.get('/:id', getProduct, (req, res, next) => {
-    res.send(makeResponse('success', [res.product], ['fetched 1 product from database with id: ' + req.params.id], false))
+router.get('/:id', getCue, (req, res, next) => {
+    res.send(makeResponse('success', [res.cue], ['fetched 1 cue from database with id: ' + req.params.id], false))
 })
 
 router.post('/', async (req, res, next) => {
-    const product = new Product({
+    const cue = new Cue({
         prodId: req.body.prodId,
         listDate: req.body.listDate,
         availableDate: req.body.availableDate,
@@ -53,135 +53,135 @@ router.post('/', async (req, res, next) => {
     })
 
     try {
-        const newProduct = await product.save()
+        const newCue = await cue.save()
         
-        res.status(201).json(makeResponse('success', [newProduct], ['created a new product in the database'], false))
+        res.status(201).json(makeResponse('success', [newCue], ['created a new cue in the database'], false))
     } catch (err) {
         res.status(400).json(makeError([err.message]))
     }
 })
 
-router.patch('/:id', getProduct, async (req, res, next) => {
+router.patch('/:id', getCue, async (req, res, next) => {
     if(req.body.prodId != null)
     {
-        res.product.prodId = req.body.prodId
+        res.cue.prodId = req.body.prodId
     }
     if(req.body.listDate != null)
     {
-        res.product.listDate = req.body.listDate
+        res.cue.listDate = req.body.listDate
     }
     if(req.body.availableDate != null)
     {
-        res.product.availableDate = req.body.availableDate
+        res.cue.availableDate = req.body.availableDate
     }
     if(req.body.price != null)
     {
-        res.product.price = req.body.price
+        res.cue.price = req.body.price
     }
     if(req.body.tipMaterial != null)
     {
-        res.product.tipMaterial = req.body.tipMaterial
+        res.cue.tipMaterial = req.body.tipMaterial
     }
     if(req.body.tipSize != null)
     {
-        res.product.tipSize = req.body.tipSize
+        res.cue.tipSize = req.body.tipSize
     }
     if(req.body.ferruleMaterial != null)
     {
-        res.product.ferruleMaterial = req.body.ferruleMaterial
+        res.cue.ferruleMaterial = req.body.ferruleMaterial
     }
     if(req.body.shaftMaterial != null)
     {
-        res.product.shaftMaterial = req.body.shaftMaterial
+        res.cue.shaftMaterial = req.body.shaftMaterial
     }
     if(req.body.collarMaterial != null)
     {
-        res.product.collarMaterial = req.body.collarMaterial
+        res.cue.collarMaterial = req.body.collarMaterial
     }
     if(req.body.jointPinSize != null)
     {
-        res.product.jointPinSize = req.body.jointPinSize
+        res.cue.jointPinSize = req.body.jointPinSize
     }
     if(req.body.jointPinMaterial != null)
     {
-        res.product.jointPinMaterial = req.body.jointPinMaterial
+        res.cue.jointPinMaterial = req.body.jointPinMaterial
     }
     if(req.body.jointCollarMaterial != null)
     {
-        res.product.jointCollarMaterial = req.body.jointCollarMaterial
+        res.cue.jointCollarMaterial = req.body.jointCollarMaterial
     }
     if(req.body.forearmSize != null)
     {
-        res.product.forearmSize = req.body.forearmSize
+        res.cue.forearmSize = req.body.forearmSize
     }
     if(req.body.forearmMaterial != null)
     {
-        res.product.forearmMaterial = req.body.forearmMaterial
+        res.cue.forearmMaterial = req.body.forearmMaterial
     }
     if(req.body.forearmPointMaterial != null)
     {
-        res.product.forearmPointMaterial = req.body.forearmPointMaterial
+        res.cue.forearmPointMaterial = req.body.forearmPointMaterial
     }
     if(req.body.veneerMatieral != null)
     {
-        res.product.veneerMatieral = req.body.veneerMatieral
+        res.cue.veneerMatieral = req.body.veneerMatieral
     }
     if(req.body.handleMaterial != null)
     {
-        res.product.handleMaterial = req.body.handleMaterial
+        res.cue.handleMaterial = req.body.handleMaterial
     }
     if(req.body.buttSleeveSize != null)
     {
-        res.product.buttSleeveSize = req.body.buttSleeveSize
+        res.cue.buttSleeveSize = req.body.buttSleeveSize
     }
     if(req.body.buttSleeveMaterial != null)
     {
-        res.product.buttSleeveMaterial = req.body.buttSleeveMaterial
+        res.cue.buttSleeveMaterial = req.body.buttSleeveMaterial
     }
     if(req.body.buttSleeveVeneerMaterial != null)
     {
-        res.product.buttSleeveVeneerMaterial = req.body.buttSleeveVeneerMaterial
+        res.cue.buttSleeveVeneerMaterial = req.body.buttSleeveVeneerMaterial
     }
     if(req.body.buttCapMaterial != null)
     {
-        res.product.buttCapMaterial = req.body.buttCapMaterial
+        res.cue.buttCapMaterial = req.body.buttCapMaterial
     }
     if(req.body.bumperMaterial != null)
     {
-        res.product.bumperMaterial = req.body.bumperMaterial
+        res.cue.bumperMaterial = req.body.bumperMaterial
     }
 
     try {
-        const updateProduct = await res.product.save()
+        const updateCue = await res.cue.save()
 
-        res.json(makeResponse('success', [updateProduct], ['updated a product in the database'], false))
+        res.json(makeResponse('success', [updateCue], ['updated a cue in the database'], false))
     } catch (err) {
         res.status(400).json(makeError([err.message]))
     }
 })
 
-router.delete('/:id', getProduct, async (req, res, next) => {
+router.delete('/:id', getCue, async (req, res, next) => {
     try {
-        await res.product.deleteOne()
-        res.status(201).json(makeResponse('success', false, ['deleted a product in the database with id: ' + req.params.id], false))
+        await res.cue.deleteOne()
+        res.status(201).json(makeResponse('success', false, ['deleted a cue in the database with id: ' + req.params.id], false))
     } catch (err) {
         res.status(500).json(makeError([err.message]))
     }
 })
 
 
-async function getProduct(req, res, next) {
-    let product
+async function getCue(req, res, next) {
+    let cue
     try {
-        product = await Product.findById(req.params.id)
-        if(product == null){
-            return res.status(404).json(makeError(['Cannot find product']))
+        cue = await Cue.findById(req.params.id)
+        if(cue == null){
+            return res.status(404).json(makeError(['Cannot find cue']))
         }
     } catch (err) {
         return res.status(500).json(makeError([err.message]))
     }
 
-    res.product = product
+    res.cue = cue
     next()
 }
 
