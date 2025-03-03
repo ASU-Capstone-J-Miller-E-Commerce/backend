@@ -1,7 +1,5 @@
 const express = require('express')
 const bcrypt = require('bcryptjs')
-const analytic = require('../models/analytic')
-const Product = require('../models/product')
 const User = require('../models/user')
 const { authUser , authAdmin } = require('./authorization')
 const { makeResponse, makeError } = require('../response/makeResponse')

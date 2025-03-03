@@ -37,14 +37,20 @@ mongoose.connect(process.env.DATABASE_URL, {
   console.log('Error connecting to MongoDB:', err);
 });
 
-const products = require('./routes/product');
-app.use('/products', products);
+const cues = require('./routes/cue');
+app.use('/cues', cues);
 
 const orders = require('./routes/order');
-app.use('/orders', orders);
+app.use('/admin/orders', orders);
+
+const materials = require('./routes/material');
+app.use('/admin/materials', materials);
+
+const accessories = require('./routes/accessory');
+app.use('/admin/accessories', accessories);
 
 const analytics = require('./routes/analytic');
-app.use('/analytics', analytics);
+app.use('/admin/analytics', analytics);
 
 const accounts = require('./routes/authorization');
 app.use('/account', accounts);
