@@ -17,7 +17,7 @@ router.get('/', async (req, res, next) => {
         const accessories = await Accessory.find()
         res.status(200).json(makeResponse('success', [accessories], ['fetched all accessories from database'], false))
     } catch (err) {
-        res.status(500).json(makeError([err.message]))
+        res.status(500).json(makeError(["internal server error, please try again later or contact support"]))
     }
 })
 
@@ -30,43 +30,46 @@ router.post('/', async (req, res, next) => {
     const accessory = new Accessory({
         accessoryCode: req.body.accessoryCode,
         name: req.body.name,
-        imageURL: req.body.imageURL,
+        description: req.body.description,
         price: req.body.price,
-    })
+        status: req.body.status
+    });
+    
 
     try {
         const newAccessory = await accessory.save()
         
         res.status(201).json(makeResponse('success', [newAccessory], ['created a new accessory in the database'], false))
     } catch (err) {
-        res.status(400).json(makeError([err.message]))
+        res.status(400).json(makeError(["one or more fields is incorrect, the database returned the following error: " + err]))
     }
 })
 
 router.patch('/:id', getAccessory, async (req, res, next) => {
-    if(req.body.name != null)
-    {
-        res.material.name = req.body.name
+    if (req.body.accessoryCode != null) {
+        res.accessory.accessoryCode = req.body.accessoryCode;
     }
-    if(req.body.price != null)
-    {
-        res.material.price = req.body.price
+    if (req.body.name != null) {
+        res.accessory.name = req.body.name;
     }
-    if(req.body.imageURL != null)
-    {
-        res.material.imageURL = req.body.imageURL
+    if (req.body.description != null) {
+        res.accessory.description = req.body.description;
     }
-    if(req.body.accessoryCode != null)
-    {
-        res.material.accessoryCode = req.body.accessoryCode
+    if (req.body.price != null) {
+        res.accessory.price = req.body.price;
     }
+    if (req.body.status != null) {
+        res.accessory.status = req.body.status;
+    }
+
+    res.accessory.updatedOn = Date.now();
 
     try {
         const updatedAccessory = await res.accessory.save()
 
         res.json(makeResponse('success', [updatedAccessory], ['updated a accessory in the database'], false))
     } catch (err) {
-        res.status(400).json(makeError([err.message]))
+        res.status(400).json(makeError(["one or more fields is incorrect, the database returned the following error: " + err]))
     }
 })
 
@@ -75,7 +78,7 @@ router.delete('/:id', getAccessory, async (req, res, next) => {
         await res.accessory.deleteOne()
         res.status(201).json(makeResponse('success', false, ['deleted a accessory in the database with database id: ' + req.params.id], false))
     } catch (err) {
-        res.status(500).json(makeError([err.message]))
+        res.status(500).json(makeError(["internal server error, please try again later or contact support"]))
     }
 })
 
@@ -88,7 +91,7 @@ async function getAccessory(req, res, next) {
             return res.status(404).json(makeError(['Cannot find accessory']))
         }
     } catch (err) {
-        return res.status(500).json(makeError([err.message]))
+        return res.status(500).json(makeError(["internal server error, please try again later or contact support"]))
     }
 
     res.accessory = accessory
