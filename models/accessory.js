@@ -9,11 +9,15 @@ const accessorySchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    price: {
+    description: {
         type: String,
         required: false
     },
-    imageURL: {
+    price: {
+        type: Number,
+        required: false
+    },
+    status: {
         type: String,
         required: false
     },

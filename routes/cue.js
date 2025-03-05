@@ -150,6 +150,9 @@ router.patch('/:id', getCue, async (req, res, next) => {
     {
         res.cue.bumperMaterial = req.body.bumperMaterial
     }
+    
+    res.cue.updatedOn = Date.now()
+
 
     try {
         const updateCue = await res.cue.save()

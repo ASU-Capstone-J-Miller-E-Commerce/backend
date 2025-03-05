@@ -1,97 +1,89 @@
 const mongoose = require("mongoose")
 
-const cueSchema = new mongoose.Schema({
-    prodId: {
-        type: String, 
+const woodSchema = new mongoose.Schema({
+    materialCode: {
+        type: String,
         required: true
     },
-    isDeleted: {
+    commonName: {
+        type: String,
+        required: true
+    },
+    altName1: {
+        type: String,
+        required: false
+    },
+    altName2: {
+        type: String,
+        required: false
+    },
+    jankaHardness: {
+        type: String,
+        required: true
+    },
+    geographicOrigin: {
+        type: String,
+        required: true
+    },
+    scientificName: {
+        type: String,
+        required: true
+    },
+    color1: {
+        type: String,
+        required: true
+    },
+    color2: {
+        type: String,
+        required: false
+    },
+    color3: {
+        type: String,
+        required: false
+    },
+    streaksAndVeins: {
+        type: String,
+        required: false
+    },
+    color1: {
+        type: String,
+        required: true
+    },
+    texture: {
+        type: String,
+        required: true
+    },
+    grainPattern: {
+        type: String,
+        required: true
+    },
+    image: {
+        type: String,
+        required: false
+    },
+    inStock: {
         type: Boolean,
-        default: false
-    },
-    listDate: {
-        type: Date,
         required: true
     },
-    availableDate: {
-        type: Date,
-        required: false
-    },
-    price: {
-        type: String, 
-        required: true
-    },
-    tipMaterial: {
+    metaphysicalTags1: {
         type: String,
         required: false
     },
-    tipSize: {
-        type: String,
-        required: true
-    },
-    ferruleMaterial: {
-        type: String,
-        required: true
-    },
-    shaftMaterial: {
-        type: String,
-        required: true
-    },
-    collarMaterial: {
-        type: String,
-        required: true
-    },
-    jointPinSize: {
-        type: String,
-        required: true
-    },
-    jointPinMaterial: {
-        type: String,
-        required: true
-    },
-    jointCollarMaterial: {
-        type: String,
-        required: true
-    },
-    forearmSize: {
-        type: String,
-        required: true
-    },
-    forearmMaterial: {
-        type: String,
-        required: true
-    },
-    forearmPointMaterial: {
+    metaphysicalTags2: {
         type: String,
         required: false
     },
-    veneerMatieral: {
+    metaphysicalTags3: {
         type: String,
         required: false
     },
-    handleMaterial: {
-        type: String,
-        required: true
-    },
-    buttSleeveSize: {
-        type: String,
-        required: true
-    },
-    buttSleeveMaterial: {
-        type: String,
-        required: true
-    },
-    buttSleeveVeneerMaterial: {
+    metaphysicalTags4: {
         type: String,
         required: false
     },
-    buttCapMaterial: {
+    metaphysicalAndSpiritualDesc: {
         type: String,
-        required: true
-    },
-    bumperMaterial: {
-        type: String,
-        required: true
+        required: false
     },
     createdOn: {
         type: Date,
@@ -103,4 +95,4 @@ const cueSchema = new mongoose.Schema({
     }
 })
 
-module.exports = mongoose.model('cue', cueSchema)
+module.exports = mongoose.model('wood', woodSchema)
