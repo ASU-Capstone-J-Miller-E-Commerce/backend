@@ -106,7 +106,7 @@ router.post('/login', async (req, res) =>
         if(!validPassword)
         {
             //Invalid password.
-            return res.status(400).json(makeError(['Invalid Username / Password.']));
+            return res.status(400).json(makeError(['Invalid Email or Password.']));
         }
 
         //Successful authorization. Create token.
@@ -124,7 +124,7 @@ router.post('/login', async (req, res) =>
                 maxAge: 86400 * 1000, // EXP in one day.
             }
         );
-        return res.status(201).json(makeResponse('success', token, ['Login Successful'], false));
+        return res.status(201).json(makeResponse('success', token, ['Login Successful.'], false));
     }catch(ex){
         console.error(ex);
         res.status(400).json(makeError(['Something went wrong.']));
