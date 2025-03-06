@@ -18,7 +18,7 @@ router.post('/register', async (req, res) =>
     try{
         //This will change when front end is complete for sending requests to backend.
         //Testing works with JSON format.
-        const { email, password } = req.body.data;
+        const { email, password, firstName="", lastName="" } = req.body;
 
         //Check if the entered email is in fact an email address.
         if(!validator.isEmail(email) || email.length > 320)
@@ -47,7 +47,7 @@ router.post('/register', async (req, res) =>
         //Int is the salt length to generate, longer value is more secure.
         const passHash = await bcrypt.hash(password, 10);
 
-        const newUser = new user( { email: email, password: passHash, role: "User"});
+        const newUser = new user( { email: email, password: passHash, firstName: firstName, lastName: lastName, role: "User"});
         await newUser.save();
 
         const accountEmailNotification = `
@@ -71,7 +71,7 @@ router.post('/register', async (req, res) =>
         </html>
         `
 
-        sendEmail(email, "Account Created", accountEmailNotification);
+        //sendEmail(email, "Account Created", accountEmailNotification);
         res.status(201).json(makeResponse('success', false, ['You have registered successfully!'], false));
     }catch (ex){
         console.error(ex);
@@ -86,7 +86,7 @@ router.post('/login', async (req, res) =>
 
     try{
         //Find user in the database by email.
-        const user = await user.findOne({ email });
+        const login = await user.findOne({ email });
         if(!user)
         {
             //User not found. Invalid email.
@@ -94,7 +94,7 @@ router.post('/login', async (req, res) =>
         }
 
         //User found, compare password hashes.
-        const validPassword = await bcrypt.compare(password, user.password);
+        const validPassword = await bcrypt.compare(password, login.password);
         if(!validPassword)
         {
             //Invalid password.
@@ -103,11 +103,19 @@ router.post('/login', async (req, res) =>
 
         //Successful authorization. Create token.
         const token_payload = {
-            userId: user.email,
-            role: user.role,
+            userId: login.email,
+            role: login.role,
         };
 
-        const token = jwt.sign(token_payload, jwtSecret, { expiresIn: '4h'});
+        const token = jwt.sign(token_payload, jwtSecret, { expiresIn: '1d'}); //EXP in one day.
+        res.cookie("jwt", token, 
+            {
+                httpOnly: true, //set to true in prod, false for browser testing.
+                secure: false, //set to true when in prod
+                sameSite: "Lax", //Set to "strict" for prod, Lax or None for testing and dev ONLY.
+                maxAge: 86400 * 1000, // EXP in one day.
+            }
+        );
         return res.status(201).json(makeResponse('success', token, ['Login Successful'], false));
     }catch(ex){
         console.error(ex);
@@ -119,7 +127,7 @@ router.post('/login', async (req, res) =>
 const authUser = (req, res, next) => 
 {
     //Update when logic for passing to backend is complete.
-    const token = req.header('Authorization');
+    const token = req.cookies.jwt;
 
     if(!token)
     {
@@ -130,7 +138,9 @@ const authUser = (req, res, next) =>
     {
         const userToken = token.split(' ')[1];
         const validated = jwt.verify(userToken, jwtSecret);
-        req.user = validated;
+        
+        req.userId = validated.userId;
+        req.userRole = validated.userRole;
         next();
     }catch(ex)
     {

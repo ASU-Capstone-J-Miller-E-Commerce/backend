@@ -6,7 +6,10 @@ const cors = require('cors');
 // Initialize app
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3000',  //Update for production and if your domain is different for testing.
+  credentials: true                 //Needed to store and send cookies.
+}));
 
 // log all requests for debugging purposes
 app.use((req, res, next) => {
