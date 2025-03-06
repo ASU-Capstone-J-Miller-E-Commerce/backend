@@ -34,6 +34,14 @@ router.post('/register', async (req, res) =>
         {
             return res.status(400).json(makeError(['Password cannot be more than 64 characters long.']));
         }
+        if( password.firstName > 30)
+        {
+            return res.status(400).json(makeError(['Your first name cannot be more than 30 characters long.']));
+        }
+        if( password.lastName > 30)
+        {
+            return res.status(400).json(makeError(['Your last name cannot be more than 30 characters long.']));
+        }
 
         // Check if a user with that email exists in the database.
         const userExists = await user.findOne({ email: email });
