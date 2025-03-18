@@ -95,7 +95,7 @@ router.post('/login', async (req, res) =>
     try{
         //Find user in the database by email.
         const login = await user.findOne({ email });
-        if(!user)
+        if(!login)
         {
             //User not found. Invalid email.
             return res.status(400).json(makeError(['Please enter a valid email.']));
@@ -128,6 +128,32 @@ router.post('/login', async (req, res) =>
     }catch(ex){
         console.error(ex);
         res.status(400).json(makeError(['Something went wrong.']));
+    }
+});
+
+router.get('/check-auth', async (req, res) => {
+    try {
+        const token = req.cookies.jwt;
+        console.log("hit")
+        console.log(token)
+        
+        // If no token exists, return false
+        if (!token) {
+            return res.status(200).json(makeData(false));
+        }
+        
+        // Verify the token is valid
+        try {
+            jwt.verify(token, jwtSecret);
+            // Token is valid
+            return res.status(200).json(makeData(true));
+        } catch (tokenError) {
+            // Token exists but is invalid (expired or tampered)
+            return res.status(200).json(makeData(false));
+        }
+    } catch (ex) {
+        console.error(ex);
+        res.status(500).json(makeError(['Something went wrong checking authentication']));
     }
 });
 
