@@ -134,8 +134,6 @@ router.post('/login', async (req, res) =>
 router.get('/check-auth', async (req, res) => {
     try {
         const token = req.cookies.jwt;
-        console.log("hit")
-        console.log(token)
         
         // If no token exists, return false
         if (!token) {
