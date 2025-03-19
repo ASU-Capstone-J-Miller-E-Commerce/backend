@@ -7,19 +7,19 @@ const woodSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        required: false
+        required: true
     },
     description: {
         type: String,
-        required: false
+        required: true
     },
     tier: {
         type: String,
-        required: false
+        required: true
     },
     colors: {
         type: [String], // Array of strings
-        required: false
+        required: true
     },
     commonName: {
         type: String,
@@ -27,11 +27,11 @@ const woodSchema = new mongoose.Schema({
     },
     alternateName1: {
         type: String,
-        required: false
+        required: true
     },
     alternateName2: {
         type: String,
-        required: false
+        required: true
     },
     scientificName: {
         type: String,
@@ -39,19 +39,19 @@ const woodSchema = new mongoose.Schema({
     },
     brief: {
         type: String,
-        required: false
+        required: true
     },
     jankaHardness: {
         type: String,
-        required: false
+        required: true
     },
     treeHeight: {
         type: String,
-        required: false
+        required: true
     },
     trunkDiameter: {
         type: String,
-        required: false
+        required: true
     },
     geographicOrigin: {
         type: String,
@@ -59,19 +59,19 @@ const woodSchema = new mongoose.Schema({
     },
     streaksVeins: {
         type: String,
-        required: false
+        required: true
     },
     texture: {
         type: String,
-        required: false
+        required: true
     },
     grainPattern: {
         type: String,
-        required: false
+        required: true
     },
     metaphysicalTags: {
         type: [String], // Array of strings
-        required: false
+        required: true
     },
     createdOn: {
         type: Date,

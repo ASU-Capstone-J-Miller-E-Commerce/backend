@@ -7,19 +7,19 @@ const crystalSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        required: false
+        required: true
     },
     description: {
         type: String,
-        required: false
+        required: true
     },
     tier: {
         type: String,
-        required: false
+        required: true
     },
     colors: {
         type: [String], // Array of strings
-        required: false
+        required: true
     },
     crystalName: {
         type: String,
@@ -31,7 +31,7 @@ const crystalSchema = new mongoose.Schema({
     },
     psychologicalCorrespondence: {
         type: [String], // Array of strings
-        required: false
+        required: true
     },
     createdOn: {
         type: Date,
