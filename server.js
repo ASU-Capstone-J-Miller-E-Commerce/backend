@@ -2,10 +2,13 @@ const express = require('express');
 const mongoose = require('mongoose');
 require('dotenv').config();
 const cors = require('cors');
+var cookies = require("cookie-parser");
+
 
 // Initialize app
 const app = express();
 app.use(express.json());
+app.use(cookies());
 app.use(cors({
   origin: 'http://localhost:3000',  //Update for production and if your domain is different for testing.
   credentials: true                 //Needed to store and send cookies.
@@ -43,22 +46,22 @@ mongoose.connect(process.env.DATABASE_URL, {
 const cues = require('./routes/cue');
 app.use('/cues', cues);
 
-const orders = require('./routes/order');
+const orders = require('./routes/admin/order');
 app.use('/admin/orders', orders);
 
-const materials = require('./routes/material');
+const materials = require('./routes/admin/material');
 app.use('/admin/materials', materials);
 
-const accessories = require('./routes/accessory');
+const accessories = require('./routes/admin/accessory');
 app.use('/admin/accessories', accessories);
 
-const analytics = require('./routes/analytic');
+const analytics = require('./routes/admin/analytic');
 app.use('/admin/analytics', analytics);
 
 const accounts = require('./routes/authorization');
 app.use('/account', accounts);
 
-const adminOnly = require('./routes/admin');
+const adminOnly = require('./routes/admin/admin');
 app.use('/admin', adminOnly);
 
 // Sample route

@@ -1,8 +1,8 @@
 const express = require('express')
-const Accessory = require('../models/accessory')
-const { makeError, makeResponse } = require('../response/makeResponse');
+const Accessory = require('../../models/accessory')
+const { makeError, makeResponse } = require('../../response/makeResponse');
 const router = express.Router()
-
+const { authUser , authAdmin } = require('../authorization')
 
 router.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "http://localhost:3000") // update to match the domain you will make the request from
@@ -12,7 +12,7 @@ router.use(function(req, res, next) {
 });
 
 //get all
-router.get('/', async (req, res, next) => {
+router.get('/', authAdmin, async (req, res, next) => {
     try {
         const accessories = await Accessory.find()
         res.status(200).json(makeResponse('success', [accessories], ['fetched all accessories from database'], false))
@@ -22,11 +22,11 @@ router.get('/', async (req, res, next) => {
 })
 
 //get one
-router.get('/:id', getAccessory, (req, res, next) => {
+router.get('/:id', authAdmin, getAccessory, (req, res, next) => {
     res.send(makeResponse('success', [res.accessory], ['fetched 1 accessory from database with id: ' + req.params.id], false))
 })
 
-router.post('/', async (req, res, next) => {
+router.post('/', authAdmin, async (req, res, next) => {
     const accessory = new Accessory({
         accessoryCode: req.body.accessoryCode,
         name: req.body.name,
@@ -45,7 +45,7 @@ router.post('/', async (req, res, next) => {
     }
 })
 
-router.patch('/:id', getAccessory, async (req, res, next) => {
+router.patch('/:id', authAdmin, getAccessory, async (req, res, next) => {
     if (req.body.accessoryCode != null) {
         res.accessory.accessoryCode = req.body.accessoryCode;
     }
@@ -73,7 +73,7 @@ router.patch('/:id', getAccessory, async (req, res, next) => {
     }
 })
 
-router.delete('/:id', getAccessory, async (req, res, next) => {
+router.delete('/:id', authAdmin, getAccessory, async (req, res, next) => {
     try {
         await res.accessory.deleteOne()
         res.status(201).json(makeResponse('success', false, ['deleted a accessory in the database with database id: ' + req.params.id], false))

@@ -1,8 +1,8 @@
 const express = require('express')
-const Analytic = require('../models/analytic')
-const { makeError, makeResponse } = require('../response/makeResponse');
+const Analytic = require('../../models/analytic')
+const { makeError, makeResponse } = require('../../response/makeResponse');
 const router = express.Router()
-
+const { authUser , authAdmin } = require('../authorization')
 
 router.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "http://localhost:5000") // update to match the domain you will make the request from
@@ -12,7 +12,7 @@ router.use(function(req, res, next) {
 });
 
 //get all
-router.get('/', async (req, res, next) => {
+router.get('/', authAdmin, async (req, res, next) => {
     try {
         const analytics = await Analytic.find()
         res.status(200).json(makeResponse('success', [analytics], ['fetched all analytics from database'], false))
@@ -22,7 +22,7 @@ router.get('/', async (req, res, next) => {
 })
 
 //get one
-router.get('/:id', getAnalytic, (req, res, next) => {
+router.get('/:id', authAdmin, getAnalytic, (req, res, next) => {
     res.send(makeResponse('success', [res.analytic], ['fetched 1 analytic from the database with id: ' + req.params.id], false))
 })
 
