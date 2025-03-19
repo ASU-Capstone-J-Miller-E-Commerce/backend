@@ -5,84 +5,72 @@ const woodSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    status: {
+        type: String,
+        required: false
+    },
+    description: {
+        type: String,
+        required: false
+    },
+    tier: {
+        type: String,
+        required: false
+    },
+    colors: {
+        type: [String], // Array of strings
+        required: false
+    },
     commonName: {
         type: String,
         required: true
     },
-    altName1: {
+    alternateName1: {
         type: String,
         required: false
     },
-    altName2: {
+    alternateName2: {
         type: String,
         required: false
-    },
-    jankaHardness: {
-        type: String,
-        required: true
-    },
-    geographicOrigin: {
-        type: String,
-        required: true
     },
     scientificName: {
         type: String,
         required: true
     },
-    color1: {
+    brief: {
+        type: String,
+        required: false
+    },
+    jankaHardness: {
+        type: String,
+        required: false
+    },
+    treeHeight: {
+        type: String,
+        required: false
+    },
+    trunkDiameter: {
+        type: String,
+        required: false
+    },
+    geographicOrigin: {
         type: String,
         required: true
     },
-    color2: {
+    streaksVeins: {
         type: String,
         required: false
-    },
-    color3: {
-        type: String,
-        required: false
-    },
-    streaksAndVeins: {
-        type: String,
-        required: false
-    },
-    color1: {
-        type: String,
-        required: true
     },
     texture: {
         type: String,
-        required: true
+        required: false
     },
     grainPattern: {
         type: String,
-        required: true
-    },
-    image: {
-        type: String,
         required: false
     },
-    inStock: {
-        type: Boolean,
-        required: true
-    },
-    metaphysicalTags1: {
-        type: String,
-        required: false
-    },
-    metaphysicalTags2: {
-        type: String,
-        required: false
-    },
-    metaphysicalTags3: {
-        type: String,
-        required: false
-    },
-    metaphysicalTags4: {
-        type: String,
-        required: false
-    },
-    metaphysicalAndSpiritualDesc: {
-        type: String,
+    metaphysicalTags: {
+        type: [String], // Array of strings
         required: false
     },
     createdOn: {
