@@ -5,40 +5,32 @@ const crystalSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    crystalCategory: {
+    status: {
         type: String,
-        required: true
+        required: false
+    },
+    description: {
+        type: String,
+        required: false
+    },
+    tier: {
+        type: String,
+        required: false
+    },
+    colors: {
+        type: [String], // Array of strings
+        required: false
     },
     crystalName: {
         type: String,
         required: true
     },
-    color1: {
+    crystalCategory: {
         type: String,
         required: true
     },
-    color2: {
-        type: String,
-        required: false
-    },
-    color3: {
-        type: String,
-        required: false
-    },
-    rarity: {
-        type: String,
-        required: true
-    },
-    psychologicalCorr1: {
-        type: String,
-        required: false
-    },
-    psychologicalCorr2: {
-        type: String,
-        required: false
-    },
-    psychologicalCorr3: {
-        type: String,
+    psychologicalCorrespondence: {
+        type: [String], // Array of strings
         required: false
     },
     createdOn: {
