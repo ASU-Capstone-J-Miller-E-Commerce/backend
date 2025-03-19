@@ -1,9 +1,9 @@
 const express = require('express')
-const Wood = require('../models/wood')
-const Crystal = require('../models/crystal')
-const { makeError, makeResponse } = require('../response/makeResponse');
+const Wood = require('../../models/wood')
+const Crystal = require('../../models/crystal')
+const { makeError, makeResponse } = require('../../response/makeResponse');
 const router = express.Router()
-
+const { authUser , authAdmin } = require('../authorization')
 
 router.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "http://localhost:3000") // update to match the domain you will make the request from
@@ -13,7 +13,7 @@ router.use(function(req, res, next) {
 });
 
 //get all
-router.get('/', async (req, res, next) => {
+router.get('/', authAdmin, async (req, res, next) => {
     try {
         const crystals = await Crystal.find()
         const woods = await Wood.find()
@@ -23,7 +23,7 @@ router.get('/', async (req, res, next) => {
     }
 })
 
-router.get('/crystal/', async (req, res, next) => {
+router.get('/crystal/', authAdmin, async (req, res, next) => {
     try {
         const crystals = await Crystal.find()
         res.status(200).json(makeResponse('success', [crystals], ['fetched all crystals from database'], false))
@@ -32,7 +32,7 @@ router.get('/crystal/', async (req, res, next) => {
     }
 })
 
-router.get('/wood/', async (req, res, next) => {
+router.get('/wood/', authAdmin, async (req, res, next) => {
     try {
         const woods = await Wood.find()
         res.status(200).json(makeResponse('success', [woods], ['fetched all woods from database'], false))
@@ -42,15 +42,15 @@ router.get('/wood/', async (req, res, next) => {
 })
 
 //get one
-router.get('/wood/:id', getWood, (req, res, next) => {
+router.get('/wood/:id', authAdmin, getWood, (req, res, next) => {
     res.send(makeResponse('success', [res.wood], ['fetched 1 wood from database with id: ' + req.params.id], false))
 })
 
-router.get('/crystal/:id', getCrystal, (req, res, next) => {
+router.get('/crystal/:id', authAdmin, getCrystal, (req, res, next) => {
     res.send(makeResponse('success', [res.crystal], ['fetched 1 crystal from database with id: ' + req.params.id], false))
 })
 
-router.post('/wood/', async (req, res, next) => {
+router.post('/wood/', authAdmin, async (req, res, next) => {
     const wood = new Wood({
         materialCode: req.body.materialCode,
         status: req.body.status,
@@ -83,7 +83,7 @@ router.post('/wood/', async (req, res, next) => {
     }
 })
 
-router.post('/crystal/', async (req, res, next) => {
+router.post('/crystal/', authAdmin, async (req, res, next) => {
     const crystal = new Crystal({
         materialCode: req.body.materialCode,
         status: req.body.status,
@@ -107,7 +107,7 @@ router.post('/crystal/', async (req, res, next) => {
 })
 
 //update
-router.patch('/wood/:id', getWood, async (req, res, next) => {
+router.patch('/wood/:id', authAdmin, getWood, async (req, res, next) => {
     if (req.body.materialCode != null) {
         res.material.materialCode = req.body.materialCode;
     }
@@ -174,7 +174,7 @@ router.patch('/wood/:id', getWood, async (req, res, next) => {
     }
 })
 
-router.patch('/crystal/:id', getCrystal, async (req, res, next) => {
+router.patch('/crystal/:id', authAdmin, getCrystal, async (req, res, next) => {
     if (req.body.materialCode != null) {
         res.material.materialCode = req.body.materialCode;
     }
@@ -211,7 +211,7 @@ router.patch('/crystal/:id', getCrystal, async (req, res, next) => {
     }
 })
 
-router.delete('/wood/:id', getWood, async (req, res, next) => {
+router.delete('/wood/:id', authAdmin, getWood, async (req, res, next) => {
     try {
         await res.wood.deleteOne()
         res.status(201).json(makeResponse('success', false, ['deleted a wood in the database with database id: ' + req.params.id], false))
@@ -220,7 +220,7 @@ router.delete('/wood/:id', getWood, async (req, res, next) => {
     }
 })
 
-router.delete('/crystal/:id', getCrystal, async (req, res, next) => {
+router.delete('/crystal/:id', authAdmin, getCrystal, async (req, res, next) => {
     try {
         await res.crystal.deleteOne()
         res.status(201).json(makeResponse('success', false, ['deleted a crystal in the database with database id: ' + req.params.id], false))
