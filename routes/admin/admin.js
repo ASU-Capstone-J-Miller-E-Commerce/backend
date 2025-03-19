@@ -1,9 +1,10 @@
 const express = require('express')
 const bcrypt = require('bcryptjs')
-const User = require('../models/user')
-const { authUser , authAdmin } = require('./authorization')
-const { makeResponse, makeError } = require('../response/makeResponse')
+const User = require('../../models/user')
+const { authUser , authAdmin } = require('../authorization')
+const { makeResponse, makeError } = require('../../response/makeResponse')
 const router = express.Router()
+const auth = require('../../routes/authorization');
 
 
 router.use(function(req, res, next) {
@@ -15,7 +16,7 @@ router.use(function(req, res, next) {
 
 //Get ALL Users
 //router.get('/users', authUser, authAdmin, async (req, res) =>
-router.get('/users', async (req, res) =>
+router.get('/users', authAdmin, async (req, res) =>
 {
     try{
         const users = await User.find({}, {password: 0});
@@ -29,7 +30,7 @@ router.get('/users', async (req, res) =>
 
 //Get ONE User
 //router.get('/users/:email', authUser, authAdmin, async (req, res) =>
-router.get('/users/:email', async (req, res) =>
+router.get('/users/:email', authAdmin, async (req, res) =>
     {
         try{
             const {email} = req.params;
@@ -44,7 +45,7 @@ router.get('/users/:email', async (req, res) =>
 
 //Create a new User
 //router.post('/users', authUser, authAdmin, async (req, res) =>
-router.post('/users', async (req, res) =>
+router.post('/users', authAdmin, async (req, res) =>
 {
     try{
         const { email, password, firstName, lastName } = req.body;
@@ -75,7 +76,7 @@ router.post('/users', async (req, res) =>
 
 //Edit / save User
 //router.put('/users/:email', authUser, authAdmin, async (req, res) =>
-router.put('/users/:email', async (req, res) =>
+router.put('/users/:email', authAdmin, async (req, res) =>
 {
     try
     {
@@ -113,7 +114,7 @@ router.put('/users/:email', async (req, res) =>
 
 //Change password
 //router.put('/users/resetPassword/:email', authUser, authAdmin, async (req, res) =>
-router.put('/users/resetPassword/:email', async (req, res) =>
+router.put('/users/resetPassword/:email', authAdmin, async (req, res) =>
 {
     try
     {
@@ -155,7 +156,7 @@ router.put('/users/resetPassword/:email', async (req, res) =>
 
 //Delete User
 //router.delete('/users/:email', authUser, authAdmin, async (req, res) =>
-router.delete('/users/:email', async (req, res) =>
+router.delete('/users/:email', authAdmin, async (req, res) =>
 {
     try
     {

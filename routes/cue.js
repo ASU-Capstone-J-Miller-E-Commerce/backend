@@ -2,7 +2,7 @@ const express = require('express')
 const Cue = require('../models/cue')
 const { makeError, makeResponse } = require('../response/makeResponse');
 const router = express.Router()
-
+const { authUser , authAdmin } = require('./authorization')
 
 router.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "http://localhost:3000") // update to match the domain you will make the request from
@@ -26,7 +26,7 @@ router.get('/:id', getCue, (req, res, next) => {
     res.send(makeResponse('success', [res.cue], ['fetched 1 cue from database with id: ' + req.params.id], false))
 })
 
-router.post('/', async (req, res, next) => {
+router.post('admin/', authAdmin, async (req, res, next) => {
     const cue = new Cue({
         prodId: req.body.prodId,
         listDate: req.body.listDate,
@@ -61,7 +61,7 @@ router.post('/', async (req, res, next) => {
     }
 })
 
-router.patch('/:id', getCue, async (req, res, next) => {
+router.patch('admin/:id', authAdmin, getCue, async (req, res, next) => {
     if(req.body.prodId != null)
     {
         res.cue.prodId = req.body.prodId
@@ -163,7 +163,7 @@ router.patch('/:id', getCue, async (req, res, next) => {
     }
 })
 
-router.delete('/:id', getCue, async (req, res, next) => {
+router.delete('admin/:id', authAdmin, getCue, async (req, res, next) => {
     try {
         await res.cue.deleteOne()
         res.status(201).json(makeResponse('success', false, ['deleted a cue in the database with id: ' + req.params.id], false))

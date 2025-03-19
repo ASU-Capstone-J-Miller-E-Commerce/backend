@@ -1,8 +1,8 @@
 const express = require('express')
-const Order = require('../models/order')
-const { makeError, makeResponse } = require('../response/makeResponse');
+const Order = require('../../models/order')
+const { makeError, makeResponse } = require('../../response/makeResponse');
 const router = express.Router()
-
+const { authUser , authAdmin } = require('../authorization')
 
 router.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "http://localhost:3000") // update to match the domain you will make the request from
@@ -12,7 +12,7 @@ router.use(function(req, res, next) {
 });
 
 //get all
-router.get('/', async (req, res, next) => {
+router.get('/', authAdmin, async (req, res, next) => {
     try {
         const orders = await Order.find()
         res.status(200).json(makeResponse('success', [orders], ['fetched all orders from database'], false))
@@ -22,11 +22,11 @@ router.get('/', async (req, res, next) => {
 })
 
 //get one
-router.get('/:id', getOrder, (req, res, next) => {
+router.get('/:id', authAdmin, getOrder, (req, res, next) => {
     res.send(makeResponse('success', [res.order], ['fetched 1 order from database with id: ' + req.params.id], false))
 })
 
-router.post('/', async (req, res, next) => {
+router.post('/', authAdmin, async (req, res, next) => {
     const order = new Order({
         customer: req.body.customer,
         orderStatus: req.body.orderStatus,
@@ -51,7 +51,7 @@ router.post('/', async (req, res, next) => {
     }
 })
 
-router.patch('/:id', getOrder, async (req, res, next) => {
+router.patch('/:id', authAdmin, getOrder, async (req, res, next) => {
     if(req.body.customer != null)
     {
         res.order.customer = req.body.customer
@@ -106,7 +106,7 @@ router.patch('/:id', getOrder, async (req, res, next) => {
     }
 })
 
-router.delete('/:id', getOrder, async (req, res, next) => {
+router.delete('/:id', authAdmin, getOrder, async (req, res, next) => {
     try {
         await res.order.deleteOne()
         res.status(201).json(makeResponse('success', false, ['deleted a order in the database with database id: ' + req.params.id], false))

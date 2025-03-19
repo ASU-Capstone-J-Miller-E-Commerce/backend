@@ -9,8 +9,13 @@ const { makeData } = require('../response/makeResponse')
 const { makeError, makeResponse } = require('../response/makeResponse')
 require('dotenv').config()
 const jwtSecret = process.env.JWT_SECRET_KEY
+const rateLimit = require('express-rate-limit');
 
-
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, //15 minutes
+    max: 5, //5 tries every 15 minutes
+    message: { error: "Too many login attempts, try again later" }
+});
 
 // New User Registration
 router.post('/register', async (req, res) => 
@@ -168,8 +173,7 @@ const authUser = (req, res, next) =>
 
     try
     {
-        const userToken = token.split(' ')[1];
-        const validated = jwt.verify(userToken, jwtSecret);
+        const validated = jwt.verify(token, jwtSecret);
         
         req.userId = validated.userId;
         req.userRole = validated.userRole;
@@ -184,11 +188,31 @@ const authUser = (req, res, next) =>
 //Admin auth 
 const authAdmin = (req, res, next) => 
 {
-    if(!req.user || req.user.role !== 'Admin')
+    const token = req.cookies.jwt;
+
+    if(!token)
     {
-        return res.status(401).json(makeError(['Access Denied. Admin Only Resource.']));
+        return res.status(401).json(makeError(['Access Denied. Invalid Token.']));
     }
-    next();
+
+    try
+    {
+        const validated = jwt.verify(token, jwtSecret);
+    
+        res.userId = validated.userId;
+        res.userRole = validated.role;
+    
+        if(validated.role != 'Admin')
+        {
+            return res.status(401).json(makeError(['Access Denied. Admin Only Resource.']));
+        }
+        next();
+    }
+    catch(ex)
+    {
+        console.error(ex);
+        res.status(400).json(makeError(['Something went wrong.']));
+    }
 };
 
 module.exports = router;
