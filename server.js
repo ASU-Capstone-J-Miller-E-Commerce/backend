@@ -2,13 +2,14 @@ const express = require('express');
 const mongoose = require('mongoose');
 require('dotenv').config();
 const cors = require('cors');
-var cookies = require("cookie-parser");
+const cookieParser = require('cookie-parser');
 
 
 // Initialize app
 const app = express();
 app.use(express.json());
-app.use(cookies());
+app.use(cookieParser());
+
 app.use(cors({
   origin: 'http://localhost:3000',  //Update for production and if your domain is different for testing.
   credentials: true                 //Needed to store and send cookies.
