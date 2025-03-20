@@ -136,27 +136,57 @@ router.post('/login', async (req, res) =>
     }
 });
 
+router.post('/logout', (req, res) => {
+    try {
+        // clear the jwt cookie
+        res.clearCookie('jwt', {
+            httpOnly: true, //set to true in prod, false for browser testing.
+            secure: false, //set to true when in prod
+            sameSite: 'Lax', //Set to "strict" for prod, Lax or None for testing and dev ONLY.
+        });
+
+        return res.status(200).json(makeResponse('success', false, ['Logout successful'], false));
+    } catch (ex) {
+        console.error(ex);
+        res.status(500).json(makeError(['Something went wrong']));
+    }
+});
+
 router.get('/check-auth', async (req, res) => {
     try {
         const token = req.cookies.jwt;
-        
-        // If no token exists, return false
+
+        // if no token exists, return false
         if (!token) {
             return res.status(200).json(makeData(false));
         }
-        
-        // Verify the token is valid
+
+        // verify the token is valid
         try {
-            jwt.verify(token, jwtSecret);
-            // Token is valid
-            return res.status(200).json(makeData(true));
+            const decoded = jwt.verify(token, jwtSecret);
+
+            // get user data from database
+            const userData = await user.findOne({ email: decoded.userId }, { password: 0 });
+
+            if (!userData) {
+                return res.status(200).json(makeData({ authenticated: false }));
+            }
+
+            // return both authentication status and user data
+            return res.status(200).json(makeData({
+                authenticated: true,
+                email: userData.email,
+                firstName: userData.firstName,
+                lastName: userData.lastName,
+                role: userData.role
+            }));
         } catch (tokenError) {
-            // Token exists but is invalid (expired or tampered)
-            return res.status(200).json(makeData(false));
+            // token exists but is invalid (expired or tampered)
+            return res.status(200).json(makeData({authenticated: false}));
         }
     } catch (ex) {
         console.error(ex);
-        res.status(500).json(makeError(['Something went wrong checking authentication']));
+        res.status(500).json(makeError(['Something went wrong.']));
     }
 });
 
@@ -168,7 +198,7 @@ const authUser = (req, res, next) =>
 
     if(!token)
     {
-        return res.status(401).json(makeError(['Access Denied. Invalid Token.']));
+        return res.status(401).json(makeError(['Insufficient Permissions.']));
     }
 
     try
@@ -204,7 +234,7 @@ const authAdmin = (req, res, next) =>
     
         if(validated.role != 'Admin')
         {
-            return res.status(401).json(makeError(['Access Denied. Admin Only Resource.']));
+            return res.status(401).json(makeError(['Insufficient Permissions.']));
         }
         next();
     }
