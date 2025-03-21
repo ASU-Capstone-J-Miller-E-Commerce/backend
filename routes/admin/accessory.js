@@ -15,7 +15,7 @@ router.use(function(req, res, next) {
 router.get('/', authAdmin, async (req, res, next) => {
     try {
         const accessories = await Accessory.find()
-        res.status(200).json(makeResponse('success', [accessories], ['fetched all accessories from database'], false))
+        res.status(200).json(makeResponse('success', accessories, ['fetched all accessories from database'], false))
     } catch (err) {
         res.status(500).json(makeError(["internal server error, please try again later or contact support"]))
     }
@@ -28,7 +28,7 @@ router.get('/:id', authAdmin, getAccessory, (req, res, next) => {
 
 router.post('/', authAdmin, async (req, res, next) => {
     const accessory = new Accessory({
-        accessoryCode: req.body.accessoryCode,
+        accessoryNumber: req.body.accessoryNumber,
         name: req.body.name,
         description: req.body.description,
         price: req.body.price,
@@ -39,15 +39,15 @@ router.post('/', authAdmin, async (req, res, next) => {
     try {
         const newAccessory = await accessory.save()
         
-        res.status(201).json(makeResponse('success', [newAccessory], ['created a new accessory in the database'], false))
+        res.status(201).json(makeResponse('success', newAccessory, ['created a new accessory in the database'], false))
     } catch (err) {
         res.status(400).json(makeError(["one or more fields is incorrect, the database returned the following error: " + err]))
     }
 })
 
-router.patch('/:id', authAdmin, getAccessory, async (req, res, next) => {
-    if (req.body.accessoryCode != null) {
-        res.accessory.accessoryCode = req.body.accessoryCode;
+router.put('/:id', authAdmin, getAccessory, async (req, res, next) => {
+    if (req.body.accessoryNumber != null) {
+        res.accessory.accessoryNumber = req.body.accessoryNumber;
     }
     if (req.body.name != null) {
         res.accessory.name = req.body.name;
@@ -67,7 +67,7 @@ router.patch('/:id', authAdmin, getAccessory, async (req, res, next) => {
     try {
         const updatedAccessory = await res.accessory.save()
 
-        res.json(makeResponse('success', [updatedAccessory], ['updated a accessory in the database'], false))
+        res.json(makeResponse('success', updatedAccessory, ['updated a accessory in the database'], false))
     } catch (err) {
         res.status(400).json(makeError(["one or more fields is incorrect, the database returned the following error: " + err]))
     }

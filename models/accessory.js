@@ -1,7 +1,7 @@
 const mongoose = require("mongoose")
 
 const accessorySchema = new mongoose.Schema({
-    accessoryCode: {
+    accessoryNumber: {
         type: String,
         required: true
     },
@@ -11,15 +11,15 @@ const accessorySchema = new mongoose.Schema({
     },
     description: {
         type: String,
-        required: false
+        required: true
     },
     price: {
         type: Number,
-        required: false
+        required: true
     },
     status: {
         type: String,
-        required: false
+        required: true
     },
     createdOn: {
         type: Date,
