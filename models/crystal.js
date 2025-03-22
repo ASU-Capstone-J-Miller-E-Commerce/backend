@@ -1,10 +1,6 @@
 const mongoose = require("mongoose")
 
 const crystalSchema = new mongoose.Schema({
-    materialCode: {
-        type: String,
-        required: true
-    },
     status: {
         type: String,
         required: true
