@@ -39,9 +39,9 @@ router.post('/', authAdmin, async (req, res, next) => {
     try {
         const newAccessory = await accessory.save()
         
-        res.status(201).json(makeResponse('success', newAccessory, ['created a new accessory in the database'], false))
+        res.status(201).json(makeResponse('success', newAccessory, ['New accessory successfully created.'], false))
     } catch (err) {
-        res.status(400).json(makeError(["one or more fields is incorrect, the database returned the following error: " + err]))
+        res.status(400).json(makeError(["One or more fields is incorrect, the database returned the following error: " + err]))
     }
 })
 
@@ -67,16 +67,16 @@ router.put('/:id', authAdmin, getAccessory, async (req, res, next) => {
     try {
         const updatedAccessory = await res.accessory.save()
 
-        res.json(makeResponse('success', updatedAccessory, ['updated a accessory in the database'], false))
+        res.json(makeResponse('success', updatedAccessory, ['Accessory edited and saved successfully.'], false))
     } catch (err) {
-        res.status(400).json(makeError(["one or more fields is incorrect, the database returned the following error: " + err]))
+        res.status(400).json(makeError(["One or more fields is incorrect. The database returned the following error: " + err]))
     }
 })
 
 router.delete('/:id', authAdmin, getAccessory, async (req, res, next) => {
     try {
         await res.accessory.deleteOne()
-        res.status(201).json(makeResponse('success', false, ['deleted a accessory in the database with database id: ' + req.params.id], false))
+        res.status(201).json(makeResponse('success', false, ['Accessory Deleted Successfully.'], false))
     } catch (err) {
         res.status(500).json(makeError(["internal server error, please try again later or contact support"]))
     }
