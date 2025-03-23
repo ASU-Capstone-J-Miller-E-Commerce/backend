@@ -23,7 +23,7 @@ router.post('/register', async (req, res) =>
     try{
         //This will change when front end is complete for sending requests to backend.
         //Testing works with JSON format.
-        const { email, password, firstName="", lastName="" } = req.body;
+        const { email, password, firstName, lastName } = req.body;
 
         //Check if the entered email is in fact an email address.
         if(!validator.isEmail(email) || email.length > 320)

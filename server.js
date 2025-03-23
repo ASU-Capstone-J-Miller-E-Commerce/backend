@@ -62,6 +62,9 @@ app.use('/admin/analytics', analytics);
 const accounts = require('./routes/authorization');
 app.use('/account', accounts);
 
+const users = require('./routes/userRoutes');
+app.use('/user', users);
+
 const adminOnly = require('./routes/admin/admin');
 app.use('/admin', adminOnly);
 
