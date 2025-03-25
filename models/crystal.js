@@ -5,10 +5,6 @@ const crystalSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    description: {
-        type: String,
-        required: true
-    },
     tier: {
         type: String,
         required: true

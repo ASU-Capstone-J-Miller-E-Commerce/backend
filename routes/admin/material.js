@@ -87,7 +87,6 @@ router.post('/crystal/', authAdmin, async (req, res, next) => {
     const crystal = new Crystal({
         materialCode: req.body.materialCode,
         status: req.body.status,
-        description: req.body.description,
         tier: req.body.tier,
         colors: req.body.colors,
         crystalName: req.body.crystalName,
@@ -180,9 +179,6 @@ router.put('/crystal/:id', authAdmin, getCrystal, async (req, res, next) => {
     }
     if (req.body.status != null) {
         res.crystal.status = req.body.status; // FIXED
-    }
-    if (req.body.description != null) {
-        res.crystal.description = req.body.description;
     }
     if (req.body.tier != null) {
         res.crystal.tier = req.body.tier;
