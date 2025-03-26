@@ -7,6 +7,8 @@ const router = express.Router()
 const { sendEmail } = require('../sendMail')
 const { makeData } = require('../response/makeResponse')
 const { makeError, makeResponse } = require('../response/makeResponse')
+const speakeasy = require("speakeasy")
+const qrcode = require("qrcode")
 require('dotenv').config()
 const jwtSecret = process.env.JWT_SECRET_KEY
 const rateLimit = require('express-rate-limit');
@@ -23,7 +25,7 @@ router.post('/register', async (req, res) =>
     try{
         //This will change when front end is complete for sending requests to backend.
         //Testing works with JSON format.
-        const { email, password, firstName, lastName } = req.body;
+        const { email, password, fName, lName } = req.body;
 
         //Check if the entered email is in fact an email address.
         if(!validator.isEmail(email) || email.length > 320)
@@ -39,11 +41,11 @@ router.post('/register', async (req, res) =>
         {
             return res.status(400).json(makeError(['Password cannot be more than 64 characters long.']));
         }
-        if( password.firstName > 30)
+        if( fName.length > 30)
         {
             return res.status(400).json(makeError(['Your first name cannot be more than 30 characters long.']));
         }
-        if( password.lastName > 30)
+        if( lName.length > 30)
         {
             return res.status(400).json(makeError(['Your last name cannot be more than 30 characters long.']));
         }
@@ -60,7 +62,7 @@ router.post('/register', async (req, res) =>
         //Int is the salt length to generate, longer value is more secure.
         const passHash = await bcrypt.hash(password, 10);
 
-        const newUser = new user( { email: email, password: passHash, firstName: firstName, lastName: lastName, role: "User"});
+        const newUser = new user( { email: email, password: passHash, firstName: fName, lastName: lName, role: "User"});
         await newUser.save();
 
         const accountEmailNotification = `
@@ -244,6 +246,30 @@ const authAdmin = (req, res, next) =>
         res.status(400).json(makeError(['Something went wrong.']));
     }
 };
+
+//2FA QRCode generation
+router.put('/generate2FASecret', async (req, res) => {
+    try{
+        const secret = speakeasy.generateSecret({length: 20});
+        const qrcodeUrl = await qrcode.toDataURL(secret.otpauth_url)
+        const token = req.cookies.jwt;
+        const decoded = jwt.verify(token, jwtSecret);
+        const userData = await user.findOne({ email: decoded.userId }, { password: 0 });
+
+        userData.TFASecret = secret;
+        
+        await userData.save();
+        //Return data for the frontend.
+        //QR code is an image.
+        return res.json(makeData({secret, qrcodeUrl}));
+
+    }catch(ex)
+    {
+        console.error(ex);
+        res.status(400).json(makeError(['Something went wrong.']));
+    }
+});
+
 
 module.exports = router;
 module.exports.authUser = authUser;
