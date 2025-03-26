@@ -145,7 +145,7 @@ router.put('/users/resetPassword/:id', authAdmin, async (req, res) =>
 
         await editedUser.save();
 
-        return res.status(200).json(makeResponse('success', false, ['User edited and saved successfully.'], false));
+        return res.status(200).json(makeResponse('success', false, [`User edited and saved successfully.`], false));
 
     }catch(ex)
     {

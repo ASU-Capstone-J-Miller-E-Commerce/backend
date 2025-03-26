@@ -24,13 +24,22 @@ router.put('/update-name/:email', async (req, res) =>
         }
         if(newFirstName && newFirstName != '')
         {
+            if( newFirstName.length > 30)
+            {
+                return res.status(400).json(makeError(['Your first name cannot be more than 30 characters long.']));
+            }
             editedUser.firstName = newFirstName;
         }
-        if(newLastName && newLastName != '')
+        if(newLastName && newLastName != '' && newLastName.length < 30)
         {
+            if( newLastName.length > 30)
+            {
+                return res.status(400).json(makeError(['Your last name cannot be more than 30 characters long.']));
+            }
             editedUser.lastName = newLastName;
         }
-
+        
+        
         await editedUser.save();
 
         return res.status(200).json(makeResponse('success', false, ['Name saved successfully.'], false));

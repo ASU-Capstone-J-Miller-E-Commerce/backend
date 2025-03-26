@@ -233,7 +233,7 @@ const authAdmin = (req, res, next) =>
     
         res.userId = validated.userId;
         res.userRole = validated.role;
-    
+        //return res.status(200).json(makeData([validated.role]))
         if(validated.role != 'Admin')
         {
             return res.status(401).json(makeError(['Insufficient Permissions.']));
