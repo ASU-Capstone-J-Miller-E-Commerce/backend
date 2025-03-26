@@ -105,7 +105,7 @@ router.post('/login', async (req, res) =>
         if(!login)
         {
             //User not found. Invalid email.
-            return res.status(400).json(makeError(['Please enter a valid email.']));
+            return res.status(400).json(makeError(['Invalid Email or Password.']));
         }
 
         //User found, compare password hashes.
