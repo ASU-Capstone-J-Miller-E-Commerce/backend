@@ -30,11 +30,11 @@ router.get('/users', authAdmin, async (req, res) =>
 
 //Get ONE User
 //router.get('/users/:email', authUser, authAdmin, async (req, res) =>
-router.get('/users/:email', authAdmin, async (req, res) =>
+router.get('/users/:id', authAdmin, async (req, res) =>
     {
         try{
-            const {email} = req.params;
-            const users = await User.findOne({email: email}, {password: 0});
+            const {id} = req.params;
+            const users = await User.findOne({_id: id}, {password: 0});
             res.status(200).json(makeResponse('success', [users], ['Fetched user from database.'], false));
         }catch(ex)
         {
@@ -76,13 +76,13 @@ router.post('/users', authAdmin, async (req, res) =>
 
 //Edit / save User
 //router.put('/users/:email', authUser, authAdmin, async (req, res) =>
-router.put('/users/:email', authAdmin, async (req, res) =>
+router.put('/users/:id', authAdmin, async (req, res) =>
 {
     try
     {
-        const {email} = req.params;
+        const {id} = req.params;
         const {newEmail, newFirstName, newLastName} = req.body;
-        const editedUser = await User.findOne({email: email});
+        const editedUser = await User.findOne({_id: id});
 
         if(!editedUser)
         {
@@ -114,13 +114,13 @@ router.put('/users/:email', authAdmin, async (req, res) =>
 
 //Change password
 //router.put('/users/resetPassword/:email', authUser, authAdmin, async (req, res) =>
-router.put('/users/resetPassword/:email', authAdmin, async (req, res) =>
+router.put('/users/resetPassword/:id', authAdmin, async (req, res) =>
 {
     try
     {
-        const {email} = req.params;
+        const {id} = req.params;
         const {newPassword} = req.body;
-        const editedUser = await User.findOne({email: email});
+        const editedUser = await User.findOne({_id: id});
 
         if(!editedUser)
         {
@@ -145,7 +145,7 @@ router.put('/users/resetPassword/:email', authAdmin, async (req, res) =>
 
         await editedUser.save();
 
-        return res.status(200).json(makeResponse('success', false, ['User edited and saved successfully.'], false));
+        return res.status(200).json(makeResponse('success', false, [`User edited and saved successfully.`], false));
 
     }catch(ex)
     {
@@ -156,12 +156,12 @@ router.put('/users/resetPassword/:email', authAdmin, async (req, res) =>
 
 //Delete User
 //router.delete('/users/:email', authUser, authAdmin, async (req, res) =>
-router.delete('/users/:email', authAdmin, async (req, res) =>
+router.delete('/users/:id', authAdmin, async (req, res) =>
 {
     try
     {
-        const {email} = req.params;
-        const deletedUser = await User.findOneAndDelete({ email: email });
+        const {id} = req.params;
+        const deletedUser = await User.findOneAndDelete({ _id: id });
         if(!deletedUser)
         {
             return res.status(404).json(makeError(['User not found.']));
