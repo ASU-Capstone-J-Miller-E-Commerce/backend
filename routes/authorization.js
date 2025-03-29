@@ -248,7 +248,7 @@ const authAdmin = (req, res, next) =>
 };
 
 //2FA QRCode generation
-router.put('/generate2FASecret', async (req, res) => {
+router.put('/generate2FA', async (req, res) => {
     try{
         const secret = speakeasy.generateSecret({length: 20});
         const qrcodeUrl = await qrcode.toDataURL(secret.otpauth_url)
@@ -261,10 +261,47 @@ router.put('/generate2FASecret', async (req, res) => {
         await userData.save();
         //Return data for the frontend.
         //QR code is an image.
-        return res.json(makeData({secret, qrcodeUrl}));
+        return res.json(makeData({qrcodeUrl}));
 
     }catch(ex)
     {
+        console.error(ex);
+        res.status(400).json(makeError(['Something went wrong.']));
+    }
+});
+
+//2FA QRCode Verification
+router.put('/verify2FA', async (req, res) => {
+    try{
+        const token = req.cookies.jwt;
+        const decoded = jwt.verify(token, jwtSecret);
+        const userData = await user.findOne({ email: decoded.userId }, { password: 0 });
+        const code = req.body;
+
+        if(!userData || !userData.TFASecret)
+        {
+            //User or secret not found.
+            res.status(400).json(makeError(['Something went wrong.']));
+        }
+
+        const verified = speakeasy.totp.verify({
+            secret: user.TFASecret,
+            endcoding: "base32",
+            code,
+            window: 1
+        })
+
+        if(verified){
+            userData.TFAEnabled = true;
+            await userData.save();
+            res.json(makeData(["2FA Setup Complete."]))
+        }
+        else{
+            res.status(400).json(makeError(['Incorrect Code.']));
+        }
+
+
+    }catch(ex){
         console.error(ex);
         res.status(400).json(makeError(['Something went wrong.']));
     }
