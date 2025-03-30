@@ -4,7 +4,7 @@ const cueSchema = new mongoose.Schema({
     // General Attributes
     cueNumber: { type: String, required: true },
     name: { type: String, required: true },
-    price: { type: String, required: true },
+    price: { type: String, required: false },
     overallWeight: { type: String, required: false },
     overallLength: { type: String, required: false },
     description: { type: String, required: false },
@@ -12,21 +12,21 @@ const cueSchema = new mongoose.Schema({
     status: { type: String, required: true },
 
     // Shaft
-    shaftMaterial: { type: String, required: true },
+    shaftMaterial: { type: String, required: false },
     shaftTaper: { type: String, required: false },
-    tipSize: { type: String, required: true },
-    ferruleMaterial: { type: String, required: true },
+    tipSize: { type: String, required: false },
+    ferruleMaterial: { type: String, required: false },
 
     // Butt - General Attributes
     buttWeight: { type: String, required: false },
     buttLength: { type: String, required: false },
-    jointPinSize: { type: String, required: true },
-    jointPinMaterial: { type: String, required: true },
-    jointCollarMaterial: { type: String, required: true },
-    buttCapMaterial: { type: String, required: true },
+    jointPinSize: { type: String, required: false },
+    jointPinMaterial: { type: String, required: false },
+    jointCollarMaterial: { type: String, required: false },
+    buttCapMaterial: { type: String, required: false },
 
     // Butt - Forearm Attributes
-    forearmMaterial: { type: String, required: true },
+    forearmMaterial: { type: String, required: false },
     forearmInlayQuantity: { type: String, required: false },
     forearmInlaySize: { type: String, required: false },
     forearmInlayDescription: { type: String, required: false },
@@ -36,7 +36,7 @@ const cueSchema = new mongoose.Schema({
     forearmPointInlayDescription: { type: String, required: false },
 
     // Butt - Handle Attributes
-    handleMaterial: { type: String, required: true },
+    handleMaterial: { type: String, required: false },
     handleWrapType: { type: String, required: false },
     handleWrapColor: { type: String, required: false },
     handleInlayQuantity: { type: String, required: false },
@@ -44,7 +44,7 @@ const cueSchema = new mongoose.Schema({
     handleInlayDescription: { type: String, required: false },
 
     // Butt - Butt Sleeve Attributes
-    buttSleeveMaterial: { type: String, required: true },
+    buttSleeveMaterial: { type: String, required: false },
     buttsleeveInlayQuantity: { type: String, required: false },
     buttsleeveInlaySize: { type: String, required: false },
     buttsleeveInlayDescription: { type: String, required: false },
