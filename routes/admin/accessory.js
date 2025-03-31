@@ -61,6 +61,9 @@ router.put('/:id', authAdmin, getAccessory, async (req, res, next) => {
     if (req.body.status != null) {
         res.accessory.status = req.body.status;
     }
+    if (req.body.imageUrls != null) {
+        res.accessory.imageUrls = req.body.imageUrls;
+    }
 
     res.accessory.updatedOn = Date.now();
 
