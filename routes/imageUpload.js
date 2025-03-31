@@ -19,21 +19,22 @@ router.post('/upload', authAdmin, upload.single('file'), async (req, res, next) 
         res.status(400).json(makeError(['No file provided']));
         return;
     }
-    
+
     const file = req.file;
-    const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}.${file.originalname.split('.').pop()}`;
-    
+    const folder = req.body.folder || 'general';
+    const filename = `images/${folder}/${Date.now()}-${Math.random().toString(36).substring(2, 10)}.${file.originalname.split('.').pop()}`;
+
     try {
         const params = {
             Bucket: "jmillercustomcues",
-            Key: filename,
+            Key: filename, // This includes the folder path
             Body: file.buffer,
             ContentType: file.mimetype,
             ACL: "public-read"
         };
-        
+
         await s3.upload(params).promise();
-        
+
         const fileUrl = `https://jmillercustomcues.nyc3.digitaloceanspaces.com/${filename}`;
         res.status(200).json(makeResponse('success', fileUrl, ['File uploaded successfully']));
     } catch (err) {
@@ -41,5 +42,4 @@ router.post('/upload', authAdmin, upload.single('file'), async (req, res, next) 
         res.status(500).json(makeError(['Error uploading file to storage']));
     }
 });
-
 module.exports = router
