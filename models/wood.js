@@ -76,7 +76,11 @@ const woodSchema = new mongoose.Schema({
     updatedOn: {
         type: Date,
         default: Date.now
-    }
+    },
+    imageUrls: {
+        type: [String],
+        required: false
+    },
 })
 
 module.exports = mongoose.model('wood', woodSchema)
