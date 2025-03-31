@@ -14,32 +14,6 @@ const s3 = new AWS.S3({
     secretAccessKey: process.env.DIGITAL_OCEAN_ADMIN_KEY
 });
 
-router.get('/', authAdmin, async (req, res, next) => {
-    const { filename, filetype } = req.query;
-
-    if(!filename || !filetype)
-    {
-        res.status(400).json(makeError(['File name or File type not valid']))
-        return;
-    }
-
-    try {
-        const params = {
-            Bucket: "jmillercustomcues",
-            Key: filename,
-            ContentType: filetype,
-            ACL: "private",
-            Expires: 60 // URL expires in 60 seconds
-        };
-
-        res.status(200).json(makeResponse('success', await s3.getSignedUrlPromise("putObject", params), ['Made temporary URL for uploading file'], false));
-    }
-    catch (err) {
-        res.status(500).json(makeError(['Error getting upload URL']));
-        console.log(err);
-    }
-})
-
 router.post('/upload', authAdmin, upload.single('file'), async (req, res, next) => {
     if (!req.file) {
         res.status(400).json(makeError(['No file provided']));
