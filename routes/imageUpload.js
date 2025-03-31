@@ -24,7 +24,6 @@ router.post('/upload', authAdmin, upload.single('file'), async (req, res, next) 
     const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}.${file.originalname.split('.').pop()}`;
     
     try {
-        // Upload directly from your server to DO Spaces
         const params = {
             Bucket: "jmillercustomcues",
             Key: filename,
