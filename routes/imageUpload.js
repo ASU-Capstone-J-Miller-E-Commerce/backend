@@ -56,7 +56,7 @@ router.post('/upload', authAdmin, upload.single('file'), async (req, res, next) 
             Key: filename,
             Body: file.buffer,
             ContentType: file.mimetype,
-            ACL: "private"
+            ACL: "public-read"
         };
         
         await s3.upload(params).promise();
