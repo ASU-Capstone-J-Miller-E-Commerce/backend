@@ -37,7 +37,7 @@ router.get('/', authAdmin, async (req, res, next) => {
             Expires: 60 // URL expires in 60 seconds
         };
 
-        res.status(200).json(makeResponse('success', [await s3.getSignedUrlPromise("putObject", params)], ['Made temporary URL for uploading file'], false));
+        res.status(200).json(makeResponse('success', await s3.getSignedUrlPromise("putObject", params), ['Made temporary URL for uploading file'], false));
     }
     catch (err) {
         res.status(500).json(makeError(['Error getting upload URL']));
