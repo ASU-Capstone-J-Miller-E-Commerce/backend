@@ -1,9 +1,9 @@
 const AWS = require("aws-sdk");
 const express = require('express')
-const Cue = require('../models/cue')
-const { makeError, makeResponse } = require('../response/makeResponse');
+const Cue = require('../../models/cue')
+const { makeError, makeResponse } = require('../../response/makeResponse');
 const router = express.Router()
-const { authAdmin } = require('./authorization')
+const { authAdmin } = require('../authorization')
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -23,7 +23,7 @@ router.post('/upload', authAdmin, upload.single('file'), async (req, res, next) 
     const file = req.file;
     const folder = req.body.folder || 'general';
     const filename = `images/${folder}/${Date.now()}-${Math.random().toString(36).substring(2, 10)}.${file.originalname.split('.').pop()}`;
-    console.log(folder)
+
     try {
         const params = {
             Bucket: "jmillercustomcues",
