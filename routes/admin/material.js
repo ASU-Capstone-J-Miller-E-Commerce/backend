@@ -161,6 +161,9 @@ router.put('/wood/:id', authAdmin, getWood, async (req, res, next) => {
     if (req.body.metaphysicalTags != null) {
         res.wood.metaphysicalTags = req.body.metaphysicalTags;
     }
+    if (req.body.imageUrls != null) {
+        res.wood.imageUrls = req.body.imageUrls;
+    }
     
     res.wood.updatedOn = Date.now();
 
@@ -194,6 +197,9 @@ router.put('/crystal/:id', authAdmin, getCrystal, async (req, res, next) => {
     }
     if (req.body.psychologicalCorrespondence != null) {
         res.crystal.psychologicalCorrespondence = req.body.psychologicalCorrespondence;
+    }
+    if (req.body.imageUrls != null) {
+        res.crystal.imageUrls = req.body.imageUrls;
     }
     
     res.crystal.updatedOn = Date.now();

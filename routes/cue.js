@@ -2,7 +2,7 @@ const express = require('express')
 const Cue = require('../models/cue')
 const { makeError, makeResponse } = require('../response/makeResponse');
 const router = express.Router()
-const { authUser , authAdmin } = require('./authorization')
+const { authUser } = require('./authorization')
 
 router.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "http://localhost:3000") // update to match the domain you will make the request from
@@ -15,7 +15,7 @@ router.use(function(req, res, next) {
 router.get('/', async (req, res, next) => {
     try {
         const cues = await Cue.find()
-        res.status(200).json(makeResponse('success', [cues], ['fetched all cues from database'], false))
+        res.status(200).json(makeResponse('success', cues, ['fetched all cues from database'], false))
     } catch (err) {
         res.status(500).json(makeError([err.message]))
     }
@@ -25,46 +25,6 @@ router.get('/', async (req, res, next) => {
 router.get('/:id', getCue, (req, res, next) => {
     res.send(makeResponse('success', [res.cue], ['fetched 1 cue from database with id: ' + req.params.id], false))
 })
-
-router.post('admin/', authAdmin, async (req, res, next) => {
-    const cue = new Cue(req.body);
-    try {
-        const newCue = await cue.save()
-        
-        res.status(201).json(makeResponse('success', [newCue], ['created a new cue in the database'], false))
-    } catch (err) {
-        res.status(400).json(makeError([err.message]))
-    }
-})
-
-router.patch('admin/:id', authAdmin, getCue, async (req, res, next) => {
-    try {
-
-        for (const key in req.body) {
-            if (req.body[key] != null) {
-                res.cue[key] = req.body[key];
-            }
-        }
-
-        res.cue.updatedOn = Date.now();
-
-        const updateCue = await res.cue.save()
-
-        res.json(makeResponse('success', [updateCue], ['updated a cue in the database'], false))
-    } catch (err) {
-        res.status(400).json(makeError([err.message]))
-    }
-})
-
-router.delete('admin/:id', authAdmin, getCue, async (req, res, next) => {
-    try {
-        await res.cue.deleteOne()
-        res.status(201).json(makeResponse('success', false, ['deleted a cue in the database with id: ' + req.params.id], false))
-    } catch (err) {
-        res.status(500).json(makeError([err.message]))
-    }
-})
-
 
 async function getCue(req, res, next) {
     let cue

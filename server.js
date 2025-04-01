@@ -68,8 +68,11 @@ app.use('/user', users);
 const adminOnly = require('./routes/admin/admin');
 app.use('/admin', adminOnly);
 
-const imageUpload =  require('./routes/uploadImage');
-app.use('/imageUpload', imageUpload);
+const image =  require('./routes/admin/image');
+app.use('/admin/image', image);
+
+const adminCues = require('./routes/admin/cue');
+app.use('/admin/cues', adminCues);
 
 // Sample route
 app.get('/', (req, res) => {
