@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const cueSchema = new mongoose.Schema({
     // General Attributes
+    stripe_id: {type: String, required: false},
     cueNumber: { type: String, required: true },
     name: { type: String, required: true },
     price: { type: String, required: false },

@@ -74,6 +74,9 @@ app.use('/admin/image', image);
 const adminCues = require('./routes/admin/cue');
 app.use('/admin/cues', adminCues);
 
+const payment = require('./routes/payment');
+app.use('/order/payment', payment);
+
 // Sample route
 app.get('/', (req, res) => {
   res.send('Hello World');
