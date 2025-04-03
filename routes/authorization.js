@@ -1,5 +1,6 @@
 const express = require('express')
 const bcrypt = require('bcryptjs')
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken')
 const validator = require('validator')
 const user = require('../models/user')
@@ -11,6 +12,7 @@ const speakeasy = require("speakeasy")
 const qrcode = require("qrcode")
 require('dotenv').config()
 const jwtSecret = process.env.JWT_SECRET_KEY
+const ENC_KEY = process.env.ENC_KEY
 const rateLimit = require('express-rate-limit');
 
 const loginLimiter = rateLimit({
@@ -116,22 +118,46 @@ router.post('/login', async (req, res) =>
             return res.status(400).json(makeError(['Invalid Email or Password.']));
         }
 
-        //Successful authorization. Create token.
-        const token_payload = {
-            userId: login.email,
-            role: login.role,
-        };
+        if(login.TFAEnabled)
+        {
+            //2FA enabled. Require 2FA for token signing.
+            //Encrypt token data so frontend cannot see / inject data.
+            const iv = crypto.randomBytes(16);
+            const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENC_KEY), iv);
+            let encRole = cipher.update(login.role, 'utf8', 'hex');
+            encRole += cipher.final('hex');
 
-        const token = jwt.sign(token_payload, jwtSecret, { expiresIn: '1d'}); //EXP in one day.
-        res.cookie("jwt", token, 
-            {
-                httpOnly: true, //set to true in prod, false for browser testing.
-                secure: false, //set to true when in prod
-                sameSite: "Lax", //Set to "strict" for prod, Lax or None for testing and dev ONLY.
-                maxAge: 86400 * 1000, // EXP in one day.
-            }
-        );
-        return res.status(201).json(makeResponse('success', token, ['Login Successful.'], false));
+            //enEmail = await bcrypt.hash(login.email, 10);
+            //enRole = await bcrypt.hash(login.role, 10);
+            const token_payload = {
+                userId: login.email,
+                role: encRole,
+            }; 
+            const TFAEnabled = true;
+            return res.status(200).json(makeData([TFAEnabled, token_payload, iv.toString('hex')]));
+        }
+        else
+        {
+            //2FA disabled. Regular Login.
+            //Successful authorization. Create token.
+            const token_payload = {
+                userId: login.email,
+                role: login.role,
+            };
+
+            const token = jwt.sign(token_payload, jwtSecret, { expiresIn: '1d'}); //EXP in one day.
+            res.cookie("jwt", token, 
+                {
+                    httpOnly: true, //set to true in prod, false for browser testing.
+                    secure: false, //set to true when in prod
+                    sameSite: "Lax", //Set to "strict" for prod, Lax or None for testing and dev ONLY.
+                    maxAge: 86400 * 1000, // EXP in one day.
+                }
+            );
+            return res.status(201).json(makeResponse('success', token, ['Login Successful.'], false));
+        }
+        
+        
     }catch(ex){
         console.error(ex);
         res.status(400).json(makeError(['Something went wrong.']));
@@ -180,7 +206,8 @@ router.get('/check-auth', async (req, res) => {
                 email: userData.email,
                 firstName: userData.firstName,
                 lastName: userData.lastName,
-                role: userData.role
+                role: userData.role,
+                TFAEnabled: userData.TFAEnabled
             }));
         } catch (tokenError) {
             // token exists but is invalid (expired or tampered)
@@ -276,7 +303,7 @@ router.put('/verify2FA', async (req, res) => {
         const token = req.cookies.jwt;
         const decoded = jwt.verify(token, jwtSecret);
         const userData = await user.findOne({ email: decoded.userId }, { password: 0 });
-        const code = req.body;
+        const { code } = req.body;
 
         if(!userData || !userData.TFASecret)
         {
@@ -285,10 +312,10 @@ router.put('/verify2FA', async (req, res) => {
         }
 
         const verified = speakeasy.totp.verify({
-            secret: user.TFASecret,
-            endcoding: "base32",
-            code,
-            window: 1
+            secret: userData.TFASecret.base32,
+            encoding: "base32", 
+            token: code, 
+            window: 1 
         })
 
         if(verified){
@@ -297,7 +324,61 @@ router.put('/verify2FA', async (req, res) => {
             res.json(makeData(["2FA Setup Complete."]))
         }
         else{
-            res.status(400).json(makeError(['Incorrect Code.']));
+            res.status(401).json(makeError(['Something went wrong.']));
+        }
+
+
+    }catch(ex){
+        console.error(ex);
+        res.status(400).json(makeError(['Something went wrong.']));
+    }
+});
+
+//2FA Login Verification
+router.post('/verify2FALogin', async (req, res) => {
+    try{
+        const { email, token_data, code, iv } = req.body;
+
+        const userData = await user.findOne({ email });
+        if(!userData || !userData.TFASecret)
+        {
+            //User or secret not found.
+            res.status(400).json(makeError(['Something went wrong.']));
+        }
+        encRole = token_data.role;
+
+
+        console.log("IV:", iv);
+        console.log("Encrypted Role:", encRole);
+
+        const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENC_KEY), Buffer.from(iv, 'hex'));
+        let decryptedRole = decipher.update(encRole, 'hex', 'utf8');
+        decryptedRole += decipher.final('utf8');
+
+        token_data.role = decryptedRole;
+        
+        const verified = speakeasy.totp.verify({
+            secret: userData.TFASecret.base32,
+            encoding: "base32", 
+            token: code, 
+            window: 1 
+        });
+
+
+        if(verified){
+            const token = jwt.sign(token_data, jwtSecret, { expiresIn: '1d'}); //EXP in one day.
+            res.cookie("jwt", token, 
+                {
+                    httpOnly: true, //set to true in prod, false for browser testing.
+                    secure: false, //set to true when in prod
+                    sameSite: "Lax", //Set to "strict" for prod, Lax or None for testing and dev ONLY.
+                    maxAge: 86400 * 1000, // EXP in one day.
+                }
+            );
+            return res.status(201).json(makeResponse('success', token, ['Login Successful.'], false));
+        }
+        else{
+            res.status(401).json(makeError(['Something went wrong.']));
         }
 
 
