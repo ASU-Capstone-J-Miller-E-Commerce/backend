@@ -337,26 +337,28 @@ router.put('/verify2FA', async (req, res) => {
 //2FA Login Verification
 router.post('/verify2FALogin', async (req, res) => {
     try{
-        const { email, token_data, code, iv } = req.body;
+        const { token_data, code, iv } = req.body;
+        const email = token_data.userId;
+        const userData = await user.findOne({ email: email });
 
-        const userData = await user.findOne({ email });
         if(!userData || !userData.TFASecret)
         {
             //User or secret not found.
             res.status(400).json(makeError(['Something went wrong.']));
         }
+        if(code.length != 6)
+        {
+            //Code is not 6 digits.
+            res.status(400).json(makeError(['Something went wrong.']));
+        }
         encRole = token_data.role;
-
-
-        console.log("IV:", iv);
-        console.log("Encrypted Role:", encRole);
 
         const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENC_KEY), Buffer.from(iv, 'hex'));
         let decryptedRole = decipher.update(encRole, 'hex', 'utf8');
         decryptedRole += decipher.final('utf8');
 
         token_data.role = decryptedRole;
-        
+
         const verified = speakeasy.totp.verify({
             secret: userData.TFASecret.base32,
             encoding: "base32", 
@@ -378,7 +380,7 @@ router.post('/verify2FALogin', async (req, res) => {
             return res.status(201).json(makeResponse('success', token, ['Login Successful.'], false));
         }
         else{
-            res.status(401).json(makeError(['Something went wrong.']));
+            res.status(401).json(makeError(['Incorrect Code.']));
         }
 
 
