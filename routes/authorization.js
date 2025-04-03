@@ -303,7 +303,7 @@ router.put('/verify2FA', async (req, res) => {
         if(verified){
             userData.TFAEnabled = true;
             await userData.save();
-            res.json(makeData(["2FA Setup Complete."]))
+            res.status(200).json(makeResponse('success', false, ['Two factor authentication setup complete.'], false));
         }
         else{
             res.status(401).json(makeError(['Something went wrong.']));
