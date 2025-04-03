@@ -5,7 +5,7 @@ const router = express.Router()
 const { authUser , authAdmin } = require('../authorization')
 
 router.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "http://localhost:3000") // update to match the domain you will make the request from
+    res.header("Access-Control-Allow-Origin", process.env.ORIGIN_URL) // update to match the domain you will make the request from
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE')
     res.setHeader("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, methods, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers")
     next()
@@ -15,7 +15,7 @@ router.use(function(req, res, next) {
 router.get('/', authAdmin, async (req, res, next) => {
     try {
         const orders = await Order.find()
-        res.status(200).json(makeResponse('success', [orders], ['fetched all orders from database'], false))
+        res.status(200).json(makeResponse('success', orders, ['fetched all orders from database'], false))
     } catch (err) {
         res.status(500).json(makeError([err.message]))
     }
@@ -45,7 +45,7 @@ router.post('/', authAdmin, async (req, res, next) => {
     try {
         const newOrder = await order.save()
         
-        res.status(201).json(makeResponse('success', [newOrder], ['created a new order in the database with order id: ' + order.orderId], false))
+        res.status(201).json(makeResponse('success', newOrder, ['created a new order in the database with order id: ' + order.orderId], false))
     } catch (err) {
         res.status(400).json(makeError([err.message]))
     }
@@ -100,7 +100,7 @@ router.patch('/:id', authAdmin, getOrder, async (req, res, next) => {
     try {
         const updatedOrder = await res.order.save()
 
-        res.json(makeResponse('success', [updatedOrder], ['updated a order in the database with order id: ' + updatedOrder.orderId], false))
+        res.json(makeResponse('success', updatedOrder, ['updated a order in the database with order id: ' + updatedOrder.orderId], false))
     } catch (err) {
         res.status(400).json(makeError([err.message]))
     }

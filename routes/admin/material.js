@@ -6,7 +6,7 @@ const router = express.Router()
 const { authUser , authAdmin } = require('../authorization')
 
 router.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "http://localhost:3000") // update to match the domain you will make the request from
+    res.header("Access-Control-Allow-Origin", process.env.ORIGIN_URL) // update to match the domain you will make the request from
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE')
     res.setHeader("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, methods, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers")
     next()
