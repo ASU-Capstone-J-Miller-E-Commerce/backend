@@ -28,7 +28,11 @@ const accessorySchema = new mongoose.Schema({
     updatedOn: {
         type: Date,
         default: Date.now
-    }
+    },
+    imageUrls: { 
+        type: [String], 
+        required: false 
+    },
 })
 
 module.exports = mongoose.model('accessory', accessorySchema)

@@ -5,7 +5,7 @@ const router = express.Router()
 const { authUser , authAdmin } = require('../authorization')
 
 router.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "http://localhost:3000") // update to match the domain you will make the request from
+    res.header("Access-Control-Allow-Origin", process.env.ORIGIN_URL) // update to match the domain you will make the request from
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE')
     res.setHeader("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, methods, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers")
     next()
@@ -23,7 +23,7 @@ router.get('/', authAdmin, async (req, res, next) => {
 
 //get one
 router.get('/:id', authAdmin, getAccessory, (req, res, next) => {
-    res.send(makeResponse('success', [res.accessory], ['fetched 1 accessory from database with id: ' + req.params.id], false))
+    res.send(makeResponse('success', res.accessory, ['fetched 1 accessory from database with id: ' + req.params.id], false))
 })
 
 router.post('/', authAdmin, async (req, res, next) => {
@@ -39,9 +39,9 @@ router.post('/', authAdmin, async (req, res, next) => {
     try {
         const newAccessory = await accessory.save()
         
-        res.status(201).json(makeResponse('success', newAccessory, ['created a new accessory in the database'], false))
+        res.status(201).json(makeResponse('success', newAccessory, ['New accessory successfully created.'], false))
     } catch (err) {
-        res.status(400).json(makeError(["one or more fields is incorrect, the database returned the following error: " + err]))
+        res.status(400).json(makeError(["One or more fields is incorrect, the database returned the following error: " + err]))
     }
 })
 
@@ -61,22 +61,25 @@ router.put('/:id', authAdmin, getAccessory, async (req, res, next) => {
     if (req.body.status != null) {
         res.accessory.status = req.body.status;
     }
+    if (req.body.imageUrls != null) {
+        res.accessory.imageUrls = req.body.imageUrls;
+    }
 
     res.accessory.updatedOn = Date.now();
 
     try {
         const updatedAccessory = await res.accessory.save()
 
-        res.json(makeResponse('success', updatedAccessory, ['updated a accessory in the database'], false))
+        res.json(makeResponse('success', updatedAccessory, ['Accessory edited and saved successfully.'], false))
     } catch (err) {
-        res.status(400).json(makeError(["one or more fields is incorrect, the database returned the following error: " + err]))
+        res.status(400).json(makeError(["One or more fields is incorrect. The database returned the following error: " + err]))
     }
 })
 
 router.delete('/:id', authAdmin, getAccessory, async (req, res, next) => {
     try {
         await res.accessory.deleteOne()
-        res.status(201).json(makeResponse('success', false, ['deleted a accessory in the database with database id: ' + req.params.id], false))
+        res.status(201).json(makeResponse('success', false, ['Accessory Deleted Successfully.'], false))
     } catch (err) {
         res.status(500).json(makeError(["internal server error, please try again later or contact support"]))
     }

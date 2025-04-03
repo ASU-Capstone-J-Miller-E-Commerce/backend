@@ -1,10 +1,6 @@
 const mongoose = require("mongoose")
 
 const woodSchema = new mongoose.Schema({
-    materialCode: {
-        type: String,
-        required: true
-    },
     status: {
         type: String,
         required: true
@@ -27,31 +23,31 @@ const woodSchema = new mongoose.Schema({
     },
     alternateName1: {
         type: String,
-        required: true
+        required: false
     },
     alternateName2: {
         type: String,
-        required: true
+        required: false
     },
     scientificName: {
         type: String,
-        required: true
+        required: false
     },
     brief: {
         type: String,
-        required: true
+        required: false
     },
     jankaHardness: {
         type: String,
-        required: true
+        required: false
     },
     treeHeight: {
         type: String,
-        required: true
+        required: false
     },
     trunkDiameter: {
         type: String,
-        required: true
+        required: false
     },
     geographicOrigin: {
         type: String,
@@ -63,11 +59,11 @@ const woodSchema = new mongoose.Schema({
     },
     texture: {
         type: String,
-        required: true
+        required: false
     },
     grainPattern: {
         type: String,
-        required: true
+        required: false
     },
     metaphysicalTags: {
         type: [String], // Array of strings
@@ -80,7 +76,11 @@ const woodSchema = new mongoose.Schema({
     updatedOn: {
         type: Date,
         default: Date.now
-    }
+    },
+    imageUrls: {
+        type: [String],
+        required: false
+    },
 })
 
 module.exports = mongoose.model('wood', woodSchema)

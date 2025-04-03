@@ -8,7 +8,7 @@ const auth = require('../../routes/authorization');
 
 
 router.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "http://localhost:3000") // update to match the domain you will make the request from
+    res.header("Access-Control-Allow-Origin", process.env.ORIGIN_URL) // update to match the domain you will make the request from
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE')
     res.setHeader("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, methods, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers")
     next()
@@ -35,7 +35,7 @@ router.get('/users/:id', authAdmin, async (req, res) =>
         try{
             const {id} = req.params;
             const users = await User.findOne({_id: id}, {password: 0});
-            res.status(200).json(makeResponse('success', [users], ['Fetched user from database.'], false));
+            res.status(200).json(makeResponse('success', users, ['Fetched user from database.'], false));
         }catch(ex)
         {
             console.error(ex);
@@ -65,7 +65,7 @@ router.post('/users', authAdmin, async (req, res) =>
         const passHash = await bcrypt.hash(password, 10);
         const newUser = new User({email: email, password: passHash, firstName: firstName, lastName: lastName, role: 'User'});
         await newUser.save();
-        res.status(201).json(makeResponse('success', false, ['New user successfully created.'], false));
+        res.status(201).json(makeResponse('success', newUser, ['New user successfully created.'], false));
     }catch(ex)
     {
         console.error(ex);
@@ -103,7 +103,7 @@ router.put('/users/:id', authAdmin, async (req, res) =>
 
         await editedUser.save();
 
-        return res.status(200).json(makeResponse('success', false, ['User edited and saved successfully.'], false));
+        return res.status(200).json(makeResponse('success', editedUser, ['User edited and saved successfully.'], false));
 
     }catch(ex)
     {

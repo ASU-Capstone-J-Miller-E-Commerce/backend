@@ -1,106 +1,73 @@
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
 
 const cueSchema = new mongoose.Schema({
-    prodId: {
-        type: String, 
-        required: true
-    },
-    isDeleted: {
-        type: Boolean,
-        default: false
-    },
-    listDate: {
-        type: Date,
-        required: true
-    },
-    availableDate: {
-        type: Date,
-        required: false
-    },
-    price: {
-        type: String, 
-        required: true
-    },
-    tipMaterial: {
-        type: String,
-        required: false
-    },
-    tipSize: {
-        type: String,
-        required: true
-    },
-    ferruleMaterial: {
-        type: String,
-        required: true
-    },
-    shaftMaterial: {
-        type: String,
-        required: true
-    },
-    collarMaterial: {
-        type: String,
-        required: true
-    },
-    jointPinSize: {
-        type: String,
-        required: true
-    },
-    jointPinMaterial: {
-        type: String,
-        required: true
-    },
-    jointCollarMaterial: {
-        type: String,
-        required: true
-    },
-    forearmSize: {
-        type: String,
-        required: true
-    },
-    forearmMaterial: {
-        type: String,
-        required: true
-    },
-    forearmPointMaterial: {
-        type: String,
-        required: false
-    },
-    veneerMatieral: {
-        type: String,
-        required: false
-    },
-    handleMaterial: {
-        type: String,
-        required: true
-    },
-    buttSleeveSize: {
-        type: String,
-        required: true
-    },
-    buttSleeveMaterial: {
-        type: String,
-        required: true
-    },
-    buttSleeveVeneerMaterial: {
-        type: String,
-        required: false
-    },
-    buttCapMaterial: {
-        type: String,
-        required: true
-    },
-    bumperMaterial: {
-        type: String,
-        required: true
-    },
-    createdOn: {
-        type: Date,
-        default: Date.now
-    },
-    updatedOn: {
-        type: Date,
-        default: Date.now
-    }
-})
+    // General Attributes
+    stripe_id: {type: String, required: false},
+    cueNumber: { type: String, required: true },
+    name: { type: String, required: true },
+    price: { type: String, required: false },
+    overallWeight: { type: String, required: false },
+    overallLength: { type: String, required: false },
+    description: { type: String, required: false },
+    notes: { type: String, required: false },
+    status: { type: String, required: true },
 
-module.exports = mongoose.model('cue', cueSchema)
+    // Shaft
+    shaftMaterial: { type: String, required: false },
+    shaftTaper: { type: String, required: false },
+    tipSize: { type: String, required: false },
+    ferruleMaterial: { type: String, required: false },
+
+    // Butt - General Attributes
+    buttWeight: { type: String, required: false },
+    buttLength: { type: String, required: false },
+    jointPinSize: { type: String, required: false },
+    jointPinMaterial: { type: String, required: false },
+    jointCollarMaterial: { type: String, required: false },
+    buttCapMaterial: { type: String, required: false },
+
+    // Butt - Forearm Attributes
+    forearmMaterial: { type: String, required: false },
+    forearmInlayQuantity: { type: String, required: false },
+    forearmInlaySize: { type: String, required: false },
+    forearmInlayDescription: { type: String, required: false },
+    forearmPointQuantity: { type: String, required: false },
+    forearmPointSize: { type: String, required: false },
+    forearmPointVeneerDescription: { type: String, required: false },
+    forearmPointInlayDescription: { type: String, required: false },
+
+    // Butt - Handle Attributes
+    handleMaterial: { type: String, required: false },
+    handleWrapType: { type: String, required: false },
+    handleWrapColor: { type: String, required: false },
+    handleInlayQuantity: { type: String, required: false },
+    handleInlaySize: { type: String, required: false },
+    handleInlayDescription: { type: String, required: false },
+
+    // Butt - Butt Sleeve Attributes
+    buttSleeveMaterial: { type: String, required: false },
+    buttsleeveInlayQuantity: { type: String, required: false },
+    buttsleeveInlaySize: { type: String, required: false },
+    buttsleeveInlayDescription: { type: String, required: false },
+    buttSleevePointQuantity: { type: String, required: false },
+    buttSleevePointSize: { type: String, required: false },
+    buttSleevePointVeneerDescription: { type: String, required: false },
+    buttSleevePointInlayDescription: { type: String, required: false },
+
+    // Rings
+    ringType: { type: String, required: false },
+    ringsDescription: { type: String, required: false },
+
+    // Config Attributes
+    isFullSplice: { type: Boolean, default: false },
+    includeWrap: { type: Boolean, default: false },
+
+    //images
+    imageUrls: {type: [String], required: false},
+
+    // Timestamps
+    createdOn: { type: Date, default: Date.now },
+    updatedOn: { type: Date, default: Date.now }
+});
+
+module.exports = mongoose.model("Cue", cueSchema);

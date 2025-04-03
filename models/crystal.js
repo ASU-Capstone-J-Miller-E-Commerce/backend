@@ -1,15 +1,7 @@
 const mongoose = require("mongoose")
 
 const crystalSchema = new mongoose.Schema({
-    materialCode: {
-        type: String,
-        required: true
-    },
     status: {
-        type: String,
-        required: true
-    },
-    description: {
         type: String,
         required: true
     },
@@ -40,7 +32,11 @@ const crystalSchema = new mongoose.Schema({
     updatedOn: {
         type: Date,
         default: Date.now
-    }
+    },
+    imageUrls: {
+        type: [String],
+        required: false
+    },
 })
 
 module.exports = mongoose.model('crystal', crystalSchema)

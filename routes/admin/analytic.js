@@ -5,7 +5,7 @@ const router = express.Router()
 const { authUser , authAdmin } = require('../authorization')
 
 router.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "http://localhost:5000") // update to match the domain you will make the request from
+    res.header("Access-Control-Allow-Origin", process.env.ORIGIN_URL) // update to match the domain you will make the request from
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST')
     res.setHeader("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, methods, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers")
     next()
@@ -15,7 +15,7 @@ router.use(function(req, res, next) {
 router.get('/', authAdmin, async (req, res, next) => {
     try {
         const analytics = await Analytic.find()
-        res.status(200).json(makeResponse('success', [analytics], ['fetched all analytics from database'], false))
+        res.status(200).json(makeResponse('success', analytics, ['fetched all analytics from database'], false))
     } catch (err) {
         res.status(500).json(makeError([err.message]))
     }
@@ -23,7 +23,7 @@ router.get('/', authAdmin, async (req, res, next) => {
 
 //get one
 router.get('/:id', authAdmin, getAnalytic, (req, res, next) => {
-    res.send(makeResponse('success', [res.analytic], ['fetched 1 analytic from the database with id: ' + req.params.id], false))
+    res.send(makeResponse('success', res.analytic, ['fetched 1 analytic from the database with id: ' + req.params.id], false))
 })
 
 router.post('/', async (req, res, next) => {
@@ -38,7 +38,7 @@ router.post('/', async (req, res, next) => {
     try {
         const newAnalytic = await analytic.save()
         
-        res.status(201).json(makeResponse('success', [newAnalytic], ['created new analytic in the database'], false))
+        res.status(201).json(makeResponse('success', newAnalytic, ['created new analytic in the database'], false))
     } catch (err) {
         res.status(400).json(makeError([err.message]))
     }

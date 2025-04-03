@@ -6,7 +6,7 @@ const router = express.Router()
 const { authUser , authAdmin } = require('../authorization')
 
 router.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "http://localhost:3000") // update to match the domain you will make the request from
+    res.header("Access-Control-Allow-Origin", process.env.ORIGIN_URL) // update to match the domain you will make the request from
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE')
     res.setHeader("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, methods, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers")
     next()
@@ -17,7 +17,7 @@ router.get('/', authAdmin, async (req, res, next) => {
     try {
         const crystals = await Crystal.find()
         const woods = await Wood.find()
-        res.status(200).json(makeResponse('success', [crystals, woods], ['fetched all materials from database'], false))
+        res.status(200).json(makeResponse('success', [...crystals, ...woods], ['fetched all materials from database'], false))
     } catch (err) {
         res.status(500).json(makeError(["internal server error, please try again later or contact support"]))
     }
@@ -26,7 +26,7 @@ router.get('/', authAdmin, async (req, res, next) => {
 router.get('/crystal/', authAdmin, async (req, res, next) => {
     try {
         const crystals = await Crystal.find()
-        res.status(200).json(makeResponse('success', [crystals], ['fetched all crystals from database'], false))
+        res.status(200).json(makeResponse('success', crystals, ['fetched all crystals from database'], false))
     } catch (err) {
         res.status(500).json(makeError(["internal server error, please try again later or contact support"]))
     }
@@ -35,7 +35,7 @@ router.get('/crystal/', authAdmin, async (req, res, next) => {
 router.get('/wood/', authAdmin, async (req, res, next) => {
     try {
         const woods = await Wood.find()
-        res.status(200).json(makeResponse('success', [woods], ['fetched all woods from database'], false))
+        res.status(200).json(makeResponse('success', woods, ['fetched all woods from database'], false))
     } catch (err) {
         res.status(500).json(makeError(["internal server error, please try again later or contact support"]))
     }
@@ -43,11 +43,11 @@ router.get('/wood/', authAdmin, async (req, res, next) => {
 
 //get one
 router.get('/wood/:id', authAdmin, getWood, (req, res, next) => {
-    res.send(makeResponse('success', [res.wood], ['fetched 1 wood from database with id: ' + req.params.id], false))
+    res.send(makeResponse('success', res.wood, ['fetched 1 wood from database with id: ' + req.params.id], false))
 })
 
 router.get('/crystal/:id', authAdmin, getCrystal, (req, res, next) => {
-    res.send(makeResponse('success', [res.crystal], ['fetched 1 crystal from database with id: ' + req.params.id], false))
+    res.send(makeResponse('success', res.crystal, ['fetched 1 crystal from database with id: ' + req.params.id], false))
 })
 
 router.post('/wood/', authAdmin, async (req, res, next) => {
@@ -77,9 +77,9 @@ router.post('/wood/', authAdmin, async (req, res, next) => {
     try {
         const newWood = await wood.save()
         
-        res.status(201).json(makeResponse('success', [newWood], ['created a new wood in the database'], false))
+        res.status(201).json(makeResponse('success', newWood, ['New wood successfully created.'], false))
     } catch (err) {
-        res.status(400).json(makeError(["one or more fields is incorrect, the database returned the following error: " + err]))
+        res.status(400).json(makeError(["One or more fields is incorrect. The database returned the following error: " + err]))
     }
 })
 
@@ -87,7 +87,6 @@ router.post('/crystal/', authAdmin, async (req, res, next) => {
     const crystal = new Crystal({
         materialCode: req.body.materialCode,
         status: req.body.status,
-        description: req.body.description,
         tier: req.body.tier,
         colors: req.body.colors,
         crystalName: req.body.crystalName,
@@ -100,112 +99,115 @@ router.post('/crystal/', authAdmin, async (req, res, next) => {
     try {
         const newCrystal = await crystal.save()
         
-        res.status(201).json(makeResponse('success', [newCrystal], ['created a new crystal in the database'], false))
+        res.status(201).json(makeResponse('success', newCrystal, ['New Stone/Crystal successfully created.'], false))
     } catch (err) {
-        res.status(400).json(makeError(["one or more fields is incorrect, the database returned the following error: " + err]))
+        res.status(400).json(makeError(["One or more fields is incorrect. The database returned the following error: " + err]))
     }
 })
 
 //update
-router.patch('/wood/:id', authAdmin, getWood, async (req, res, next) => {
+router.put('/wood/:id', authAdmin, getWood, async (req, res, next) => {
     if (req.body.materialCode != null) {
-        res.material.materialCode = req.body.materialCode;
+        res.wood.materialCode = req.body.materialCode;
     }
     if (req.body.status != null) {
-        res.material.status = req.body.status;
+        res.wood.status = req.body.status;
     }
     if (req.body.description != null) {
-        res.material.description = req.body.description;
+        res.wood.description = req.body.description;
     }
     if (req.body.tier != null) {
-        res.material.tier = req.body.tier;
+        res.wood.tier = req.body.tier;
     }
     if (req.body.colors != null) {
-        res.material.colors = req.body.colors;
+        res.wood.colors = req.body.colors;
     }
     if (req.body.commonName != null) {
-        res.material.commonName = req.body.commonName;
+        res.wood.commonName = req.body.commonName;
     }
     if (req.body.alternateName1 != null) {
-        res.material.alternateName1 = req.body.alternateName1;
+        res.wood.alternateName1 = req.body.alternateName1;
     }
     if (req.body.alternateName2 != null) {
-        res.material.alternateName2 = req.body.alternateName2;
+        res.wood.alternateName2 = req.body.alternateName2;
     }
     if (req.body.scientificName != null) {
-        res.material.scientificName = req.body.scientificName;
+        res.wood.scientificName = req.body.scientificName;
     }
     if (req.body.brief != null) {
-        res.material.brief = req.body.brief;
+        res.wood.brief = req.body.brief;
     }
     if (req.body.jankaHardness != null) {
-        res.material.jankaHardness = req.body.jankaHardness;
+        res.wood.jankaHardness = req.body.jankaHardness;
     }
     if (req.body.treeHeight != null) {
-        res.material.treeHeight = req.body.treeHeight;
+        res.wood.treeHeight = req.body.treeHeight;
     }
     if (req.body.trunkDiameter != null) {
-        res.material.trunkDiameter = req.body.trunkDiameter;
+        res.wood.trunkDiameter = req.body.trunkDiameter;
     }
     if (req.body.geographicOrigin != null) {
-        res.material.geographicOrigin = req.body.geographicOrigin;
+        res.wood.geographicOrigin = req.body.geographicOrigin;
     }
     if (req.body.streaksVeins != null) {
-        res.material.streaksVeins = req.body.streaksVeins;
+        res.wood.streaksVeins = req.body.streaksVeins;
     }
     if (req.body.texture != null) {
-        res.material.texture = req.body.texture;
+        res.wood.texture = req.body.texture;
     }
     if (req.body.grainPattern != null) {
-        res.material.grainPattern = req.body.grainPattern;
+        res.wood.grainPattern = req.body.grainPattern;
     }
     if (req.body.metaphysicalTags != null) {
-        res.material.metaphysicalTags = req.body.metaphysicalTags;
+        res.wood.metaphysicalTags = req.body.metaphysicalTags;
+    }
+    if (req.body.imageUrls != null) {
+        res.wood.imageUrls = req.body.imageUrls;
     }
     
-    res.material.updatedOn = Date.now();
+    res.wood.updatedOn = Date.now();
 
     try {
         const updatedWood = await res.wood.save()
 
-        res.json(makeResponse('success', [updatedWood], ['updated a wood in the database'], false))
+        res.json(makeResponse('success', updatedWood, ['Wood edited and saved successfully.'], false))
     } catch (err) {
-        res.status(400).json(makeError(["one or more fields is incorrect, the database returned the following error: " + err]))
+        res.status(400).json(makeError(["One or more fields is incorrect. The database returned the following error: " + err]))
     }
 })
 
-router.patch('/crystal/:id', authAdmin, getCrystal, async (req, res, next) => {
+router.put('/crystal/:id', authAdmin, getCrystal, async (req, res, next) => {
     if (req.body.materialCode != null) {
-        res.material.materialCode = req.body.materialCode;
+        res.crystal.materialCode = req.body.materialCode; // FIXED
     }
     if (req.body.status != null) {
-        res.material.status = req.body.status;
-    }
-    if (req.body.description != null) {
-        res.material.description = req.body.description;
+        res.crystal.status = req.body.status; // FIXED
     }
     if (req.body.tier != null) {
-        res.material.tier = req.body.tier;
+        res.crystal.tier = req.body.tier;
     }
     if (req.body.colors != null) {
-        res.material.colors = req.body.colors;
+        res.crystal.colors = req.body.colors;
     }
     if (req.body.crystalName != null) {
-        res.material.crystalName = req.body.crystalName;
+        res.crystal.crystalName = req.body.crystalName;
     }
     if (req.body.crystalCategory != null) {
-        res.material.crystalCategory = req.body.crystalCategory;
+        res.crystal.crystalCategory = req.body.crystalCategory;
     }
     if (req.body.psychologicalCorrespondence != null) {
-        res.material.psychologicalCorrespondence = req.body.psychologicalCorrespondence;
+        res.crystal.psychologicalCorrespondence = req.body.psychologicalCorrespondence;
+    }
+    if (req.body.imageUrls != null) {
+        res.crystal.imageUrls = req.body.imageUrls;
     }
     
-    res.material.updatedOn = Date.now();
+    res.crystal.updatedOn = Date.now();
 
     try {
         const updatedCrystal = await res.crystal.save()
 
-        res.json(makeResponse('success', [updatedCrystal], ['updated a crystal in the database'], false))
+        res.json(makeResponse('success', updatedCrystal, ['Stone/Crystal edited and saved successfully.'], false))
     } catch (err) {
         res.status(400).json(makeError(["one or more fields is incorrect, the database returned the following error: " + err]))
     }
@@ -214,7 +216,7 @@ router.patch('/crystal/:id', authAdmin, getCrystal, async (req, res, next) => {
 router.delete('/wood/:id', authAdmin, getWood, async (req, res, next) => {
     try {
         await res.wood.deleteOne()
-        res.status(201).json(makeResponse('success', false, ['deleted a wood in the database with database id: ' + req.params.id], false))
+        res.status(201).json(makeResponse('success', false, ['Wood Deleted Successfully.'], false))
     } catch (err) {
         res.status(500).json(makeError(["internal server error, please try again later or contact support"]))
     }
@@ -223,7 +225,7 @@ router.delete('/wood/:id', authAdmin, getWood, async (req, res, next) => {
 router.delete('/crystal/:id', authAdmin, getCrystal, async (req, res, next) => {
     try {
         await res.crystal.deleteOne()
-        res.status(201).json(makeResponse('success', false, ['deleted a crystal in the database with database id: ' + req.params.id], false))
+        res.status(201).json(makeResponse('success', false, ['Stone/Crystal Deleted Successfully.'], false))
     } catch (err) {
         res.status(500).json(makeError(["internal server error, please try again later or contact support"]))
     }
@@ -250,7 +252,7 @@ async function getCrystal(req, res, next) {
     try {
         crystal = await Crystal.findById(req.params.id)
         if(crystal == null){
-            return res.status(404).json(makeError(['Cannot find crystal']))
+            return res.status(404).json(makeError(['Cannot find Stone/Crystal']))
         }
     } catch (err) {
         return res.status(500).json(makeError(["internal server error, please try again later or contact support"]))

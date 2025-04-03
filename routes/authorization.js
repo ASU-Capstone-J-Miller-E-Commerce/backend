@@ -14,6 +14,7 @@ require('dotenv').config()
 const jwtSecret = process.env.JWT_SECRET_KEY
 const ENC_KEY = process.env.ENC_KEY
 const rateLimit = require('express-rate-limit');
+const { returnMessage } = require('../emailNotificationTemplates/accountCreation')
 
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, //15 minutes
@@ -43,11 +44,11 @@ router.post('/register', async (req, res) =>
         {
             return res.status(400).json(makeError(['Password cannot be more than 64 characters long.']));
         }
-        if( fName.length > 30)
+        if(fName.length > 30)
         {
             return res.status(400).json(makeError(['Your first name cannot be more than 30 characters long.']));
         }
-        if( lName.length > 30)
+        if(lName.length > 30)
         {
             return res.status(400).json(makeError(['Your last name cannot be more than 30 characters long.']));
         }
@@ -67,28 +68,9 @@ router.post('/register', async (req, res) =>
         const newUser = new user( { email: email, password: passHash, firstName: fName, lastName: lName, role: "User"});
         await newUser.save();
 
-        const accountEmailNotification = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title>Welcome to J Miller Custom Cues</title>
-        </head>
-        <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
-            <div style="max-width: 600px; background-color: #ffffff; padding: 20px; border-radius: 5px; text-align: center;">
-                <h2 style="color: #333;">Welcome to J Miller Custom Cues!</h2>
-                <p style="color: #666;">Thank you for creating an account with us. Your passion for precision-crafted cues starts here.</p>
-                <p><strong>Account Details:</strong></p>
-                <p>Email: ${email}</p>
-                <p>Click the button below to access your account:</p>
-                <a href="https://google.com" style="background-color: #1a73e8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Go to My Account</a>
-                <p style="color: #666; margin-top: 20px;">If you did not create this account, please contact our support team.</p>
-            </div>
-        </body>
-        </html>
-        `
+        const accountEmailNotification = returnMessage(email)
 
-        //sendEmail(email, "Account Created", accountEmailNotification);
+        sendEmail(email, "Account Created", accountEmailNotification);
         res.status(201).json(makeResponse('success', false, ['You have registered successfully!'], false));
     }catch (ex){
         console.error(ex);
