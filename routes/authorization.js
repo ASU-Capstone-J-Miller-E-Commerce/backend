@@ -304,13 +304,29 @@ router.put('/verify2FA', async (req, res) => {
         if(verified){
             userData.TFAEnabled = true;
             await userData.save();
+            
+            // Create new token with updated isAdmin status
+            const token_payload = {
+                userId: userData.email,
+                role: userData.role,
+                isAdmin: (userData.role == 'Admin' && userData.TFAEnabled) ? true : false,
+            };
+            
+            const newToken = jwt.sign(token_payload, jwtSecret, { expiresIn: '1d' });
+            
+            // Set the updated JWT cookie
+            res.cookie("jwt", newToken, {
+                httpOnly: true,
+                secure: false, // set to true in production
+                sameSite: "Lax", // Set to "strict" for prod
+                maxAge: 86400 * 1000, // 1 day expiration
+            });
+            
             res.status(200).json(makeResponse('success', false, ['Two factor authentication setup complete.'], false));
         }
         else{
             res.status(401).json(makeError(['Invalid Code.']));
         }
-
-
     }catch(ex){
         console.error(ex);
         res.status(400).json(makeError(['Something went wrong.']));
