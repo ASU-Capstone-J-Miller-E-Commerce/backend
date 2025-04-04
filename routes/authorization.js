@@ -192,7 +192,7 @@ router.get('/check-auth', async (req, res) => {
                 lastName: userData.lastName,
                 role: userData.role,
                 TFAEnabled: userData.TFAEnabled,
-                isAdmin: (login.role == 'Admin' && login.TFAEnabled) ? true : false,
+                isAdmin: (userData.role == 'Admin' && userData.TFAEnabled) ? true : false,
             }));
         } catch (tokenError) {
             // token exists but is invalid (expired or tampered)
