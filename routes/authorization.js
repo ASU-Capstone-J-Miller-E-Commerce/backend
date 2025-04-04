@@ -114,6 +114,7 @@ router.post('/login', async (req, res) =>
             const token_payload = {
                 userId: login.email,
                 role: encRole,
+                isAdmin: (login.role == 'Admin' && login.TFAEnabled) ? true : false,
             }; 
             const TFAEnabled = true;
             return res.status(200).json(makeData([TFAEnabled, token_payload, iv.toString('hex')]));
@@ -125,6 +126,7 @@ router.post('/login', async (req, res) =>
             const token_payload = {
                 userId: login.email,
                 role: login.role,
+                isAdmin: (login.role == 'Admin' && login.TFAEnabled) ? true : false,
             };
 
             const token = jwt.sign(token_payload, jwtSecret, { expiresIn: '1d'}); //EXP in one day.
@@ -240,13 +242,11 @@ const authAdmin = (req, res, next) =>
     {
         const validated = jwt.verify(token, jwtSecret);
     
-        res.userId = validated.userId;
-        res.userRole = validated.role;
-        //return res.status(200).json(makeData([validated.role]))
-        if(validated.role != 'Admin')
+        if(!validated.isAdmin)
         {
             return res.status(401).json(makeError(['Insufficient Permissions.']));
         }
+        console.log(validated)
         next();
     }
     catch(ex)
