@@ -306,7 +306,7 @@ router.put('/verify2FA', async (req, res) => {
             res.status(200).json(makeResponse('success', false, ['Two factor authentication setup complete.'], false));
         }
         else{
-            res.status(401).json(makeError(['Something went wrong.']));
+            res.status(401).json(makeError(['Invalid Code.']));
         }
 
 
