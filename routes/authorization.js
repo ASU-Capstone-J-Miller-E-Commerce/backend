@@ -247,7 +247,7 @@ const authAdmin = (req, res, next) =>
         {
             return res.status(401).json(makeError(['Insufficient Permissions.']));
         }
-        console.log(validated)
+
         next();
     }
     catch(ex)
