@@ -30,10 +30,12 @@ const cueSchema = new mongoose.Schema({
     forearmMaterial: { type: String, required: false },
     forearmInlayQuantity: { type: String, required: false },
     forearmInlaySize: { type: String, required: false },
+    forearmInlayMaterial: { type: String, required: false },
     forearmInlayDescription: { type: String, required: false },
     forearmPointQuantity: { type: String, required: false },
     forearmPointSize: { type: String, required: false },
     forearmPointVeneerDescription: { type: String, required: false },
+    forearmPointInlayMaterial: { type: String, required: false },
     forearmPointInlayDescription: { type: String, required: false },
 
     // Butt - Handle Attributes
@@ -42,6 +44,7 @@ const cueSchema = new mongoose.Schema({
     handleWrapColor: { type: String, required: false },
     handleInlayQuantity: { type: String, required: false },
     handleInlaySize: { type: String, required: false },
+    handleInlayMaterial: { type: String, required: false },
     handleInlayDescription: { type: String, required: false },
 
     // Butt - Butt Sleeve Attributes
@@ -51,7 +54,9 @@ const cueSchema = new mongoose.Schema({
     buttsleeveInlayDescription: { type: String, required: false },
     buttSleevePointQuantity: { type: String, required: false },
     buttSleevePointSize: { type: String, required: false },
+    buttSleeveInlayMaterial: { type: String, required: false },
     buttSleevePointVeneerDescription: { type: String, required: false },
+    buttSleevePointInlayMaterial: { type: String, required: false },
     buttSleevePointInlayDescription: { type: String, required: false },
 
     // Rings
