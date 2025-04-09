@@ -50,7 +50,7 @@ router.get('/crystal/:id', authAdmin, getCrystal, (req, res, next) => {
     res.send(makeResponse('success', res.crystal, ['fetched 1 crystal from database with id: ' + req.params.id], false))
 })
 
-router.post('/wood/', authAdmin, async (req, res, next) => {
+router.post('/wood/', async (req, res, next) => {
     const wood = new Wood({
         materialCode: req.body.materialCode,
         status: req.body.status,

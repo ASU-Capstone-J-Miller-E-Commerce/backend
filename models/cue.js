@@ -1,7 +1,9 @@
 const mongoose = require("mongoose");
+const { v4: uuidv4 } = require('uuid');
 
 const cueSchema = new mongoose.Schema({
     // General Attributes
+    guid: { type: String, default: uuidv4, unique: true },
     stripe_id: {type: String, required: false},
     cueNumber: { type: String, required: true },
     name: { type: String, required: true },
