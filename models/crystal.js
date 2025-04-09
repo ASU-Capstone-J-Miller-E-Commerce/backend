@@ -1,6 +1,12 @@
 const mongoose = require("mongoose")
+const { v4: uuidv4 } = require('uuid');
 
 const crystalSchema = new mongoose.Schema({
+    guid: {
+        type: String,
+        default: uuidv4,
+        unique: true
+    },
     status: {
         type: String,
         required: true

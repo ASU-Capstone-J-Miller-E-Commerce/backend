@@ -1,6 +1,12 @@
 const mongoose = require("mongoose")
+const { v4: uuidv4 } = require('uuid');
 
 const accessorySchema = new mongoose.Schema({
+    guid: {
+        type: String,
+        default: uuidv4,
+        unique: true
+    },
     accessoryNumber: {
         type: String,
         required: true

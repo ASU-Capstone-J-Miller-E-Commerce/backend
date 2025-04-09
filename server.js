@@ -77,6 +77,9 @@ app.use('/admin/cues', adminCues);
 const payment = require('./routes/payment');
 app.use('/order/payment', payment);
 
+const search = require('./routes/search');
+app.use('/search', search);
+
 // Sample route
 app.get('/', (req, res) => {
   res.send('Hello World');
