@@ -51,4 +51,47 @@ router.put('/update-name/:email', async (req, res) =>
     }
 });
 
+
+router.put('/userChangePassword', async (req, res) =>
+    {
+        try
+        {
+            const {currPw, newPw} = req.body;
+            const token = req.cookies.jwt;
+            const decoded = jwt.verify(token, jwtSecret);
+            const editedUser = await user.findOne({ email: decoded.userId });
+            
+            if(!editedUser)
+            {
+                return res.status(404).json(makeError(['User not found.']));
+            }
+            
+
+            const validPassword = await bcrypt.compare(currPw, editedUser.password);
+            if(!validPassword)
+            {
+                //Invalid password.
+                return res.status(400).json(makeError(['Invalid Password.']));
+            }
+            if(newPw && newPw != '')
+            {
+                if( newPw.length < 8)
+                {
+                    return res.status(400).json(makeError(['Passwords must be at least 8 characters long.']));
+                }
+                
+            }
+            const passHash = await bcrypt.hash(newPw, 10);
+            editedUser.password = passHash;
+            await editedUser.save();
+    
+            return res.status(200).json(makeResponse('success', false, ['New Password Saved Successfully.'], false));
+    
+        }catch(ex)
+        {
+            console.error(ex);
+            res.status(400).json(makeError(['Something went wrong.']));
+        }
+    });
+    
 module.exports = router;
