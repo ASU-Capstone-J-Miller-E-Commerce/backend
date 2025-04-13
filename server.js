@@ -47,14 +47,29 @@ mongoose.connect(process.env.DATABASE_URL, {
 const cues = require('./routes/cue');
 app.use('/cues', cues);
 
+const accessories = require('./routes/accessory');
+app.use('/accessories', accessories);
+
+const materials = require('./routes/material');
+app.use('/materials', materials);
+
+const users = require('./routes/userRoutes');
+app.use('/user', users);
+
+const adminCues = require('./routes/admin/cue');
+app.use('/admin/cues', adminCues);
+
+const adminAccessories = require('./routes/admin/accessory');
+app.use('/admin/accessories', adminAccessories);
+
+const adminMaterials = require('./routes/admin/material');
+app.use('/admin/materials', adminMaterials);
+
+const adminOnly = require('./routes/admin/admin');
+app.use('/admin', adminOnly);
+
 const orders = require('./routes/admin/order');
 app.use('/admin/orders', orders);
-
-const materials = require('./routes/admin/material');
-app.use('/admin/materials', materials);
-
-const accessories = require('./routes/admin/accessory');
-app.use('/admin/accessories', accessories);
 
 const analytics = require('./routes/admin/analytic');
 app.use('/admin/analytics', analytics);
@@ -62,17 +77,8 @@ app.use('/admin/analytics', analytics);
 const accounts = require('./routes/authorization');
 app.use('/account', accounts);
 
-const users = require('./routes/userRoutes');
-app.use('/user', users);
-
-const adminOnly = require('./routes/admin/admin');
-app.use('/admin', adminOnly);
-
 const image =  require('./routes/admin/image');
 app.use('/admin/image', image);
-
-const adminCues = require('./routes/admin/cue');
-app.use('/admin/cues', adminCues);
 
 const payment = require('./routes/payment');
 app.use('/order/payment', payment);

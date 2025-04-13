@@ -1,8 +1,7 @@
 const express = require('express')
-const Cue = require('../models/cue')
+const Accessory = require('../models/accessory')
 const { makeError, makeData } = require('../response/makeResponse');
 const router = express.Router()
-const { authUser } = require('./authorization')
 
 router.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", process.env.ORIGIN_URL) // update to match the domain you will make the request from
@@ -14,31 +13,11 @@ router.use(function(req, res, next) {
 //get all
 router.get('/', async (req, res, next) => {
     try {
-        const cues = await Cue.find()
-        res.status(200).json(makeData(cues))
+        const accessories = await Accessory.find()
+        res.status(200).json(makeData(accessories))
     } catch (err) {
-        res.status(500).json(makeError([err.message]))
+        res.status(500).json(makeError(["internal server error, please try again later or contact support"]))
     }
 })
 
-//get one
-router.get('/:id', getCue, (req, res, next) => {
-    res.send(makeData(res.cue))
-})
-
-async function getCue(req, res, next) {
-    let cue
-    try {
-        cue = await Cue.findById(req.params.id)
-        if(cue == null){
-            return res.status(404).json(makeError(['Cannot find cue']))
-        }
-    } catch (err) {
-        return res.status(500).json(makeError([err.message]))
-    }
-
-    res.cue = cue
-    next()
-}
-
-module.exports = router
+module.exports = router;
