@@ -7,7 +7,7 @@ const cueSchema = new mongoose.Schema({
     stripe_id: {type: String, required: false},
     cueNumber: { type: String, required: true },
     name: { type: String, required: true },
-    price: { type: String, required: false },
+    price: { type: Number, required: false },
     overallWeight: { type: String, required: false },
     overallLength: { type: String, required: false },
     description: { type: String, required: false },
