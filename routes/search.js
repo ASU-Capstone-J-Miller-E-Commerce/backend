@@ -45,7 +45,23 @@ router.get('/', async (req, res, next) => {
                 { crystalCategory: searchRegex }
               ]
         });
-        res.status(200).json(makeResponse('success', [...cues, ...accessories, ...woods, ...crystals], ['fetched all search records from database'], false))
+
+        const getDisplayName = (obj) => {
+            if (obj.name) return obj.name;
+            if (obj.commonName) return obj.commonName;
+            if (obj.crystalName) return obj.crystalName;
+            
+            return '';
+        };
+
+        const result = [...cues, ...accessories, ...woods, ...crystals]
+            .sort((a, b) => {
+                const nameA = getDisplayName(a).toLowerCase();
+                const nameB = getDisplayName(b).toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+
+        res.status(200).json(makeResponse('success', result, ['fetched all search records from database'], false))
     } catch (err) {
         res.status(500).json(makeError([err.message]))
     }
