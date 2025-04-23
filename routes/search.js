@@ -69,16 +69,10 @@ router.get('/', async (req, res, next) => {
                 return nameA.localeCompare(nameB);
             });
         
-        // check if there are more than 8 results
-        const hasMoreResults = allResults.length > 8;
-        
-        // limit results to the first 8 items
-        const result = allResults.slice(0, 8);
+        // limit results to the first 12 items
+        const result = allResults.slice(0, 12);
 
-        res.status(200).json(makeResponse('success', {
-            items: result,
-            hasMoreResults: hasMoreResults
-        }, ['fetched search records from database'], false))
+        res.status(200).json(makeResponse('success', result, ['fetched search records from database'], false))
     } catch (err) {
         res.status(500).json(makeError([err.message]))
     }
