@@ -31,28 +31,34 @@ router.get('/', async (req, res, next) => {
             $or: [
                 { name: searchRegex },
                 { cueNumber: searchRegex }
-              ]
-         });
+              ],
+            status: { $in: ['Available', 'Coming Soon', 'Sold'] }
+         })
+         .select('guid cueNumber name price imageUrls');
         const accessories = await Accessory.find({
             $or: [
                 { name: searchRegex },
                 { accessoryNumber: searchRegex }
-              ]
-        });
+              ],
+            status: 'Available'
+        })
+        .select('guid accessoryNumber name price imageUrls')
         const woods = await Wood.find({
             $or: [
                 { commonName: searchRegex },
                 { alternateName1: searchRegex },
                 { alternateName2: searchRegex },
                 { scientificName: searchRegex }
-              ]
-        });
+              ],
+            status: 'Available' 
+        }).select('guid commonName imageUrls')
         const crystals = await Crystal.find({
             $or: [
                 { crystalName: searchRegex },
                 { crystalCategory: searchRegex }
-              ]
-        });
+              ],
+            status: 'Available' 
+        }).select('guid crystalName imageUrls')
 
         const getDisplayName = (obj) => {
             if (obj.name) return obj.name;
