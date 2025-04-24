@@ -86,6 +86,9 @@ app.use('/order/payment', payment);
 const search = require('./routes/search');
 app.use('/search', search);
 
+const scripts = require('./routes/admin/scripts');
+app.use('/scripts', scripts);
+
 // Sample route
 app.get('/', (req, res) => {
   res.send('Hello World');
