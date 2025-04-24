@@ -3,6 +3,7 @@ const Cue = require('../../models/cue')
 const { makeError, makeResponse } = require('../../response/makeResponse');
 const router = express.Router()
 const { authUser, authAdmin } = require('../authorization')
+const stripe = require('stripe')(process.env.STRIPE_KEY);
 
 router.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", process.env.ORIGIN_URL) // update to match the domain you will make the request from
@@ -29,6 +30,15 @@ router.get('/:id', authAdmin, getCue, (req, res, next) => {
 router.post('/', authAdmin, async (req, res, next) => {
     const cue = new Cue(req.body);
     try {
+
+        const product = await stripe.products.create({
+            name: req.body.name,
+            description: req.body.description,
+            images: req.body.imageUrls
+        });
+
+        cue.stripe_id = product.id
+
         const newCue = await cue.save()
         
         res.status(201).json(makeResponse('success', newCue, ['New Cue successfully created.'], false))
