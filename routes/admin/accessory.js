@@ -27,14 +27,21 @@ router.get('/:id', authAdmin, getAccessory, (req, res, next) => {
 })
 
 router.post('/', authAdmin, async (req, res, next) => {
-    const accessory = new Accessory({
-        accessoryNumber: req.body.accessoryNumber,
+    const accessory = new Accessory(req.body);
+
+    const priceDecimal = parseFloat(req.body.price)
+    
+    const product = await stripe.products.create({
         name: req.body.name,
         description: req.body.description,
-        price: req.body.price,
-        status: req.body.status
+        images: req.body.imageUrls,
+        default_price_data: {
+            currency: 'usd',
+            unit_amount_decimal: priceDecimal * 100
+        }
     });
-    
+
+    accessory.stripe_id = product.id
 
     try {
         const newAccessory = await accessory.save()
@@ -46,23 +53,39 @@ router.post('/', authAdmin, async (req, res, next) => {
 })
 
 router.put('/:id', authAdmin, getAccessory, async (req, res, next) => {
-    if (req.body.accessoryNumber != null) {
-        res.accessory.accessoryNumber = req.body.accessoryNumber;
+    for (const key in req.body) {
+        if (req.body[key] != null) {
+            res.accessory[key] = req.body[key];
+        }
     }
-    if (req.body.name != null) {
-        res.accessory.name = req.body.name;
+
+    if(req.body.price)
+    {
+        const priceDecimal = parseFloat(req.body.price)
+
+        const newPrice = await stripe.prices.create({
+            product: res.accessory.stripe_id,      
+            unit_amount: priceDecimal * 100,           
+            currency: 'usd'
+        });
+
+        await stripe.products.update(res.accessory.stripe_id, {
+            default_price: newPrice.id
+        });
     }
-    if (req.body.description != null) {
-        res.accessory.description = req.body.description;
+
+    if(req.body.description)
+    {
+        await stripe.products.update(res.accessory.stripe_id, {
+            description: req.body.description
+        });
     }
-    if (req.body.price != null) {
-        res.accessory.price = req.body.price;
-    }
-    if (req.body.status != null) {
-        res.accessory.status = req.body.status;
-    }
-    if (req.body.imageUrls != null) {
-        res.accessory.imageUrls = req.body.imageUrls;
+
+    if(req.body.name)
+    {
+        await stripe.products.update(res.accessory.stripe_id, {
+            name: req.body.name
+        });
     }
 
     res.accessory.updatedOn = Date.now();

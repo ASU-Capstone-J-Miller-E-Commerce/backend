@@ -16,35 +16,87 @@ router.use(function(req, res, next) {
 router.get('/', async (req, res, next) => {
     try {
         const query = req.query.query
+        const searchType = req.query.searchType
+        var limit = req.query.limit
         console.log(query)
         const searchRegex = new RegExp(query, 'i');
+
+        var cues = [], accessories = [], woods = [], crystals = []
         
-        const cues = await Cue.find({ 
-            $or: [
-                { name: searchRegex },
-                { cueNumber: searchRegex }
-              ]
-         });
-        const accessories = await Accessory.find({
-            $or: [
-                { name: searchRegex },
-                { accessoryNumber: searchRegex }
-              ]
-        });
-        const woods = await Wood.find({
-            $or: [
-                { commonName: searchRegex },
-                { alternateName1: searchRegex },
-                { alternateName2: searchRegex },
-                { scientificName: searchRegex }
-              ]
-        });
-        const crystals = await Crystal.find({
-            $or: [
-                { crystalName: searchRegex },
-                { crystalCategory: searchRegex }
-              ]
-        });
+        if(searchType)
+        {
+            cues = await Cue.find({ 
+                $or: [
+                    { name: searchRegex },
+                    { cueNumber: searchRegex }
+                  ]
+             })
+            accessories = await Accessory.find({
+                $or: [
+                    { name: searchRegex },
+                    { accessoryNumber: searchRegex }
+                  ]
+            });
+            woods = await Wood.find({
+                $or: [
+                    { commonName: searchRegex },
+                    { alternateName1: searchRegex },
+                    { alternateName2: searchRegex },
+                    { scientificName: searchRegex }
+                  ]
+            });
+            crystals = await Crystal.find({
+                $or: [
+                    { crystalName: searchRegex },
+                    { crystalCategory: searchRegex }
+                  ]
+            });
+        }
+        else
+        {
+            cues = await Cue.find({ 
+                $or: [
+                    { name: searchRegex },
+                    { cueNumber: searchRegex }
+                  ]
+             }).limit(limit);
+             limit = limit - cues.length;
+             if(limit != 0) 
+             {
+                accessories = await Accessory.find({
+                    $or: [
+                        { name: searchRegex },
+                        { accessoryNumber: searchRegex }
+                      ]
+                }).limit(limit);
+                limit = limit - accessories.length;
+                if(limit != 0)
+                {
+                    woods = await Wood.find({
+                        $or: [
+                            { commonName: searchRegex },
+                            { alternateName1: searchRegex },
+                            { alternateName2: searchRegex },
+                            { scientificName: searchRegex }
+                          ]
+                    }).limit(limit);
+                    limit = limit - woods.length;
+                    if(limit != 0)
+                    {
+                        crystals = await Crystal.find({
+                            $or: [
+                                { crystalName: searchRegex },
+                                { crystalCategory: searchRegex }
+                              ]
+                        }).limit(limit);
+                    }
+                    
+                }
+                
+             }
+            
+        }
+        
         res.status(200).json(makeResponse('success', [...cues, ...accessories, ...woods, ...crystals], ['fetched all search records from database'], false))
     } catch (err) {
         res.status(500).json(makeError([err.message]))
