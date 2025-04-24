@@ -7,6 +7,11 @@ const accessorySchema = new mongoose.Schema({
         default: uuidv4,
         unique: true
     },
+    stripe_id: 
+    {
+        type: String, 
+        required: false
+    },
     accessoryNumber: {
         type: String,
         required: true

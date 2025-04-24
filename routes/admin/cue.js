@@ -31,10 +31,16 @@ router.post('/', authAdmin, async (req, res, next) => {
     const cue = new Cue(req.body);
     try {
 
+        const priceDecimal = parseFloat(req.body.price)
+
         const product = await stripe.products.create({
             name: req.body.name,
             description: req.body.description,
-            images: req.body.imageUrls
+            images: req.body.imageUrls,
+            default_price_data: {
+                currency: 'usd',
+                unit_amount_decimal: priceDecimal * 100
+            }
         });
 
         cue.stripe_id = product.id
@@ -53,6 +59,35 @@ router.patch('/:id', authAdmin, getCue, async (req, res, next) => {
             if (req.body[key] != null) {
                 res.cue[key] = req.body[key];
             }
+        }
+
+        if(req.body.price)
+        {
+            const priceDecimal = parseFloat(req.body.price)
+
+            const newPrice = await stripe.prices.create({
+                product: res.cue.stripe_id,      
+                unit_amount: priceDecimal * 100,           
+                currency: 'usd'
+            });
+
+            await stripe.products.update(res.cue.stripe_id, {
+                default_price: newPrice.id
+            });
+        }
+
+        if(req.body.description)
+        {
+            await stripe.products.update(res.cue.stripe_id, {
+                description: req.body.description
+            });
+        }
+
+        if(req.body.name)
+        {
+            await stripe.products.update(res.cue.stripe_id, {
+                name: req.body.name
+            });
         }
 
         res.cue.updatedOn = Date.now();
