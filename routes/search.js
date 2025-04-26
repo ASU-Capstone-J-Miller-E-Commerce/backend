@@ -17,6 +17,7 @@ router.get('/', async (req, res, next) => {
     try {
         const query = req.query.query
         const fullSearch = req.query.full === 'true'
+        let limit = 12
         
         // return empty results if query is empty
         if (!query || query.trim() === '') {
@@ -28,45 +29,93 @@ router.get('/', async (req, res, next) => {
         
         const searchRegex = new RegExp(query, 'i');
         
-        // Fetch search results from different collections
-        const cues = await Cue.find({ 
-            $or: [
-                { name: searchRegex },
-                { cueNumber: searchRegex }
-              ],
-            status: { $in: ['Available', 'Coming Soon', 'Sold'] }
-         })
-         .select('guid cueNumber name price imageUrls');
-        const accessories = await Accessory.find({
-            $or: [
-                { name: searchRegex },
-                { accessoryNumber: searchRegex }
-              ],
-            status: 'Available'
-        })
-        .select('guid accessoryNumber name price imageUrls')
-        const woods = await Wood.find({
-            $or: [
-                { commonName: searchRegex },
-                { alternateName1: searchRegex },
-                { alternateName2: searchRegex },
-                { scientificName: searchRegex }
-              ],
-            status: 'Available' 
-        }).select('guid commonName imageUrls')
-        const crystals = await Crystal.find({
-            $or: [
-                { crystalName: searchRegex },
-                { crystalCategory: searchRegex }
-              ],
-            status: 'Available' 
-        }).select('guid crystalName imageUrls')
-
+        let cues = [], accessories = [], woods = [], crystals = [];
+        
+        if (fullSearch) {
+            // Fetch all results when fullSearch is true
+            cues = await Cue.find({ 
+                $or: [
+                    { name: searchRegex },
+                    { cueNumber: searchRegex }
+                ],
+                status: { $in: ['Available', 'Coming Soon', 'Sold'] }
+            }).select('guid cueNumber name price imageUrls');
+            
+            accessories = await Accessory.find({
+                $or: [
+                    { name: searchRegex },
+                    { accessoryNumber: searchRegex }
+                ],
+                status: 'Available'
+            }).select('guid accessoryNumber name price imageUrls');
+            
+            woods = await Wood.find({
+                $or: [
+                    { commonName: searchRegex },
+                    { alternateName1: searchRegex },
+                    { alternateName2: searchRegex },
+                    { scientificName: searchRegex }
+                ],
+                status: 'Available' 
+            }).select('guid commonName imageUrls');
+            
+            crystals = await Crystal.find({
+                $or: [
+                    { crystalName: searchRegex },
+                    { crystalCategory: searchRegex }
+                ],
+                status: 'Available' 
+            }).select('guid crystalName imageUrls');
+        } else {
+            // Progressive fetching respecting the limit
+            cues = await Cue.find({ 
+                $or: [
+                    { name: searchRegex },
+                    { cueNumber: searchRegex }
+                ],
+                status: { $in: ['Available', 'Coming Soon', 'Sold'] }
+            }).limit(limit).select('guid cueNumber name price imageUrls');
+            
+            limit = limit - cues.length;
+            if (limit > 0) {
+                accessories = await Accessory.find({
+                    $or: [
+                        { name: searchRegex },
+                        { accessoryNumber: searchRegex }
+                    ],
+                    status: 'Available'
+                }).limit(limit).select('guid accessoryNumber name price imageUrls');
+                
+                limit = limit - accessories.length;
+                if (limit > 0) {
+                    woods = await Wood.find({
+                        $or: [
+                            { commonName: searchRegex },
+                            { alternateName1: searchRegex },
+                            { alternateName2: searchRegex },
+                            { scientificName: searchRegex }
+                        ],
+                        status: 'Available' 
+                    }).limit(limit).select('guid commonName imageUrls');
+                    
+                    limit = limit - woods.length;
+                    if (limit > 0) {
+                        crystals = await Crystal.find({
+                            $or: [
+                                { crystalName: searchRegex },
+                                { crystalCategory: searchRegex }
+                            ],
+                            status: 'Available' 
+                        }).limit(limit).select('guid crystalName imageUrls');
+                    }
+                }
+            }
+        }
+        
         const getDisplayName = (obj) => {
             if (obj.name) return obj.name;
             if (obj.commonName) return obj.commonName;
             if (obj.crystalName) return obj.crystalName;
-            
             return '';
         };
 
@@ -77,10 +126,7 @@ router.get('/', async (req, res, next) => {
                 return nameA.localeCompare(nameB);
             });
         
-        // Only limit results if fullSearch is false
-        const result = fullSearch ? allResults : allResults.slice(0, 12);
-
-        res.status(200).json(makeResponse('success', result, ['fetched search records from database'], false))
+        res.status(200).json(makeResponse('success', allResults, ['fetched search records from database'], false))
     } catch (err) {
         res.status(500).json(makeError([err.message]))
     }
