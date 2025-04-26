@@ -16,6 +16,7 @@ router.use(function(req, res, next) {
 router.get('/', async (req, res, next) => {
     try {
         const query = req.query.query
+        const fullSearch = req.query.full === 'true'
         
         // return empty results if query is empty
         if (!query || query.trim() === '') {
@@ -27,6 +28,7 @@ router.get('/', async (req, res, next) => {
         
         const searchRegex = new RegExp(query, 'i');
         
+        // Fetch search results from different collections
         const cues = await Cue.find({ 
             $or: [
                 { name: searchRegex },
@@ -75,8 +77,8 @@ router.get('/', async (req, res, next) => {
                 return nameA.localeCompare(nameB);
             });
         
-        // limit results to the first 12 items
-        const result = allResults.slice(0, 12);
+        // Only limit results if fullSearch is false
+        const result = fullSearch ? allResults : allResults.slice(0, 12);
 
         res.status(200).json(makeResponse('success', result, ['fetched search records from database'], false))
     } catch (err) {
