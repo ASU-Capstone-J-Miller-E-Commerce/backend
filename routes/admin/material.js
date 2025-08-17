@@ -236,7 +236,7 @@ async function getWood(req, res, next) {
     let wood
     try {
         wood = await Wood.findById(req.params.id)
-        if(wood == null){
+        if(wood === null){
             return res.status(404).json(makeError(['Cannot find wood']))
         }
     } catch (err) {
@@ -251,7 +251,7 @@ async function getCrystal(req, res, next) {
     let crystal
     try {
         crystal = await Crystal.findById(req.params.id)
-        if(crystal == null){
+        if(crystal === null){
             return res.status(404).json(makeError(['Cannot find Stone/Crystal']))
         }
     } catch (err) {

@@ -120,7 +120,7 @@ async function getOrder(req, res, next) {
     let order
     try {
         order = await Order.findById(req.params.id)
-        if(order == null){
+        if(order === null){
             return res.status(404).json(makeError(['Cannot find order']))
         }
     } catch (err) {

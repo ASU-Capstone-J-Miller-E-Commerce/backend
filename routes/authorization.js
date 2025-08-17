@@ -114,7 +114,7 @@ router.post('/login', async (req, res) =>
             const token_payload = {
                 userId: login.email,
                 role: encRole,
-                isAdmin: (login.role == 'Admin' && login.TFAEnabled) ? true : false,
+                isAdmin: (login.role === 'Admin' && login.TFAEnabled) ? true : false,
             }; 
             const TFAEnabled = true;
             return res.status(200).json(makeData([TFAEnabled, token_payload, iv.toString('hex')]));
@@ -126,7 +126,7 @@ router.post('/login', async (req, res) =>
             const token_payload = {
                 userId: login.email,
                 role: login.role,
-                isAdmin: (login.role == 'Admin' && login.TFAEnabled) ? true : false,
+                isAdmin: (login.role === 'Admin' && login.TFAEnabled) ? true : false,
             };
 
             const token = jwt.sign(token_payload, jwtSecret, { expiresIn: '1d'}); //EXP in one day.
@@ -192,7 +192,7 @@ router.get('/check-auth', async (req, res) => {
                 lastName: userData.lastName,
                 role: userData.role,
                 TFAEnabled: userData.TFAEnabled,
-                isAdmin: (userData.role == 'Admin' && userData.TFAEnabled) ? true : false,
+                isAdmin: (userData.role === 'Admin' && userData.TFAEnabled) ? true : false,
             }));
         } catch (tokenError) {
             // token exists but is invalid (expired or tampered)
@@ -309,7 +309,7 @@ router.put('/verify2FA', async (req, res) => {
             const token_payload = {
                 userId: userData.email,
                 role: userData.role,
-                isAdmin: (userData.role == 'Admin' && userData.TFAEnabled) ? true : false,
+                isAdmin: (userData.role === 'Admin' && userData.TFAEnabled) ? true : false,
             };
             
             const newToken = jwt.sign(token_payload, jwtSecret, { expiresIn: '1d' });
