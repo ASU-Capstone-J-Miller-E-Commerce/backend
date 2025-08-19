@@ -16,7 +16,7 @@ router.get('/', async (req, res, next) => {
     try {
         const cues = await Cue.find({
             status: { $in: ['Available', 'Coming Soon', 'Sold'] }
-        }).select('guid cueNumber name price status imageUrls status isFullSplice includeWrap createdOn forearmInlayQuantity forearmPointQuantity handleInlayQuantity buttsleeveInlayQuantity buttSleevePointQuantity')
+        }).select('guid cueNumber name price status imageUrls status isFullSplice includeWrap createdOn forearmInlayQuantity forearmPointQuantity handleInlayQuantity buttsleeveInlayQuantity buttSleevePointQuantity -_id')
         res.status(200).json(makeData(cues))
     } catch (err) {
         res.status(500).json(makeError([err.message]))

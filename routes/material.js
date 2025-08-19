@@ -14,8 +14,8 @@ router.use(function (req, res, next) {
 //get all
 router.get('/', async (req, res, next) => {
     try {
-        const crystals = await Crystal.find().find({ status: 'Available' }).select('guid crystalName tier status imageUrls createdOn colors')
-        const woods = await Wood.find().find({ status: 'Available' }).select('guid commonName tier status imageUrls createdOn colors')
+        const crystals = await Crystal.find().find({ status: 'Available' }).select('guid crystalName tier status imageUrls createdOn colors -_id')
+        const woods = await Wood.find().find({ status: 'Available' }).select('guid commonName tier status imageUrls createdOn colors -_id')
         res.status(200).json(makeData([...crystals, ...woods]))
     } catch (err) {
         res.status(500).json(makeError(["internal server error, please try again later or contact support"]))

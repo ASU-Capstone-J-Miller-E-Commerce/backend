@@ -13,7 +13,7 @@ router.use(function(req, res, next) {
 //get all
 router.get('/', async (req, res, next) => {
     try {
-        const accessories = await Accessory.find({ status: 'Available' }).select('guid accessoryNumber name price status imageUrls createdOn')
+        const accessories = await Accessory.find({ status: 'Available' }).select('guid accessoryNumber name price status imageUrls createdOn -_id')
         res.status(200).json(makeData(accessories))
     } catch (err) {
         res.status(500).json(makeError(["internal server error, please try again later or contact support"]))
