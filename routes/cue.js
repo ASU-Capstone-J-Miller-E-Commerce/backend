@@ -16,7 +16,7 @@ router.get('/', async (req, res, next) => {
     try {
         const cues = await Cue.find({
             status: { $in: ['Available', 'Coming Soon', 'Sold'] }
-        }).select('guid cueNumber name price status imageUrls status isFullSplice includeWrap createdOn forearmInlayQuantity forearmPointQuantity handleInlayQuantity buttsleeveInlayQuantity buttSleevePointQuantity')
+        }).select('guid cueNumber name price status imageUrls status isFullSplice includeWrap createdOn forearmInlayQuantity forearmPointQuantity handleInlayQuantity buttsleeveInlayQuantity buttSleevePointQuantity -_id')
         res.status(200).json(makeData(cues))
     } catch (err) {
         res.status(500).json(makeError([err.message]))
@@ -32,7 +32,7 @@ async function getCue(req, res, next) {
     let cue
     try {
         cue = await Cue.findById(req.params.id)
-        if(cue == null){
+        if(cue === null){
             return res.status(404).json(makeError(['Cannot find cue']))
         }
     } catch (err) {

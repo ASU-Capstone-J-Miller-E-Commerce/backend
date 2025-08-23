@@ -114,7 +114,7 @@ async function getCue(req, res, next) {
     let cue
     try {
         cue = await Cue.findById(req.params.id)
-        if(cue == null){
+        if(cue === null){
             return res.status(404).json(makeError(['Cannot find cue']))
         }
     } catch (err) {

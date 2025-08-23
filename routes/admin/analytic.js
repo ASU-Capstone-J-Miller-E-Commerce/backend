@@ -48,7 +48,7 @@ async function getAnalytic(req, res, next) {
     let analytic
     try {
         analytic = await Analytic.findById(req.params.id)
-        if(analytic == null){
+        if(analytic === null){
             return res.status(404).json(makeError(['cannot find analytic']))
         }
     } catch (err) {

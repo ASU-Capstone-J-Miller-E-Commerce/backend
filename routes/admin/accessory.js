@@ -113,7 +113,7 @@ async function getAccessory(req, res, next) {
     let accessory
     try {
         accessory = await Accessory.findById(req.params.id)
-        if(accessory == null){
+        if(accessory === null){
             return res.status(404).json(makeError(['Cannot find accessory']))
         }
     } catch (err) {

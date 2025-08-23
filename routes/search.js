@@ -39,7 +39,7 @@ router.get('/', async (req, res, next) => {
                     { cueNumber: searchRegex }
                 ],
                 status: { $in: ['Available', 'Coming Soon', 'Sold'] }
-            }).select('guid cueNumber name price imageUrls');
+            }).select('guid cueNumber name price imageUrls -_id');
             
             accessories = await Accessory.find({
                 $or: [
@@ -47,7 +47,7 @@ router.get('/', async (req, res, next) => {
                     { accessoryNumber: searchRegex }
                 ],
                 status: 'Available'
-            }).select('guid accessoryNumber name price imageUrls');
+            }).select('guid accessoryNumber name price imageUrls -_id');
             
             woods = await Wood.find({
                 $or: [
@@ -57,7 +57,7 @@ router.get('/', async (req, res, next) => {
                     { scientificName: searchRegex }
                 ],
                 status: 'Available' 
-            }).select('guid commonName imageUrls');
+            }).select('guid commonName imageUrls -_id');
             
             crystals = await Crystal.find({
                 $or: [
@@ -65,7 +65,7 @@ router.get('/', async (req, res, next) => {
                     { crystalCategory: searchRegex }
                 ],
                 status: 'Available' 
-            }).select('guid crystalName imageUrls');
+            }).select('guid crystalName imageUrls -_id');
         } else {
             // Progressive fetching respecting the limit
             cues = await Cue.find({ 
@@ -74,7 +74,7 @@ router.get('/', async (req, res, next) => {
                     { cueNumber: searchRegex }
                 ],
                 status: { $in: ['Available', 'Coming Soon', 'Sold'] }
-            }).limit(limit).select('guid cueNumber name price imageUrls');
+            }).limit(limit).select('guid cueNumber name price imageUrls -_id');
             
             limit = limit - cues.length;
             if (limit > 0) {
@@ -84,7 +84,7 @@ router.get('/', async (req, res, next) => {
                         { accessoryNumber: searchRegex }
                     ],
                     status: 'Available'
-                }).limit(limit).select('guid accessoryNumber name price imageUrls');
+                }).limit(limit).select('guid accessoryNumber name price imageUrls -_id');
                 
                 limit = limit - accessories.length;
                 if (limit > 0) {
@@ -96,7 +96,7 @@ router.get('/', async (req, res, next) => {
                             { scientificName: searchRegex }
                         ],
                         status: 'Available' 
-                    }).limit(limit).select('guid commonName imageUrls');
+                    }).limit(limit).select('guid commonName imageUrls -_id');
                     
                     limit = limit - woods.length;
                     if (limit > 0) {
@@ -106,7 +106,7 @@ router.get('/', async (req, res, next) => {
                                 { crystalCategory: searchRegex }
                             ],
                             status: 'Available' 
-                        }).limit(limit).select('guid crystalName imageUrls');
+                        }).limit(limit).select('guid crystalName imageUrls -_id');
                     }
                 }
             }
