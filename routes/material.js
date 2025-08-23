@@ -22,5 +22,31 @@ router.get('/', async (req, res, next) => {
     }
 })
 
+// Get individual wood by GUID
+router.get('/wood/:guid', async (req, res, next) => {
+    try {
+        const wood = await Wood.findOne({ guid: req.params.guid }).select('-_id')
+        if (!wood) {
+            return res.status(404).json(makeError(['Wood not found']))
+        }
+        res.status(200).json(makeData(wood))
+    } catch (err) {
+        res.status(500).json(makeError(["internal server error, please try again later or contact support"]))
+    }
+})
+
+// Get individual crystal by GUID
+router.get('/crystal/:guid', async (req, res, next) => {
+    try {
+        const crystal = await Crystal.findOne({ guid: req.params.guid }).select('-_id')
+        if (!crystal) {
+            return res.status(404).json(makeError(['Crystal not found']))
+        }
+        res.status(200).json(makeData(crystal))
+    } catch (err) {
+        res.status(500).json(makeError(["internal server error, please try again later or contact support"]))
+    }
+})
+
 // Add this line if it's missing - exports the router
 module.exports = router;
