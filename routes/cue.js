@@ -23,10 +23,30 @@ router.get('/', async (req, res, next) => {
     }
 })
 
-//get one
-router.get('/:id', getCue, (req, res, next) => {
-    res.send(makeData(res.cue))
+//get one by guid
+router.get('/:guid', getCueByGuid, (req, res, next) => {
+    res.status(200).json(makeData(res.cue))
 })
+
+//get one by id (for admin)
+router.get('/id/:id', getCue, (req, res, next) => {
+    res.status(200).json(makeData(res.cue))
+})
+
+async function getCueByGuid(req, res, next) {
+    let cue
+    try {
+        cue = await Cue.findOne({ guid: req.params.guid })
+        if(cue === null){
+            return res.status(404).json(makeError(['Cannot find cue']))
+        }
+    } catch (err) {
+        return res.status(500).json(makeError([err.message]))
+    }
+
+    res.cue = cue
+    next()
+}
 
 async function getCue(req, res, next) {
     let cue
