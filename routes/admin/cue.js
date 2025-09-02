@@ -33,15 +33,21 @@ router.post('/', authAdmin, async (req, res, next) => {
 
         const priceDecimal = parseFloat(req.body.price)
 
-        const product = await stripe.products.create({
+        const productData = {
             name: req.body.name,
-            description: req.body.description,
-            images: req.body.imageUrls,
-            default_price_data: {
+            description: req.body.description && req.body.description.trim() !== '' ? req.body.description : undefined,
+            images: req.body.imageUrls
+        };
+
+        // Only add price data if price is valid
+        if (!isNaN(priceDecimal) && priceDecimal > 0) {
+            productData.default_price_data = {
                 currency: 'usd',
                 unit_amount_decimal: priceDecimal * 100
-            }
-        });
+            };
+        }
+
+        const product = await stripe.products.create(productData);
 
         cue.stripe_id = product.id
 
@@ -61,7 +67,7 @@ router.patch('/:id', authAdmin, getCue, async (req, res, next) => {
             }
         }
 
-        if(req.body.price)
+        if(req.body.price && !isNaN(parseFloat(req.body.price)) && parseFloat(req.body.price) > 0)
         {
             const priceDecimal = parseFloat(req.body.price)
 
@@ -76,7 +82,7 @@ router.patch('/:id', authAdmin, getCue, async (req, res, next) => {
             });
         }
 
-        if(req.body.description)
+        if(req.body.description && req.body.description.trim() !== '')
         {
             await stripe.products.update(res.cue.stripe_id, {
                 description: req.body.description
