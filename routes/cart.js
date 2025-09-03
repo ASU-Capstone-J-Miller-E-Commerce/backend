@@ -4,12 +4,13 @@ const User = require('../models/user');
 const Cue = require('../models/cue');
 const Accessory = require('../models/accessory');
 const { makeError, makeResponse } = require('../response/makeResponse');
+const { authUser } = require('./authorization');
 
 // Get user's cart with populated item details
-router.get('/', async (req, res) => {
+router.get('/', authUser, async (req, res) => {
     try {
-        const userId = req.user.id;
-        const user = await User.findById(userId);
+        const userEmail = req.userId;
+        const user = await User.findOne({ email: userEmail });
         
         if (!user) {
             return res.status(404).json(makeError(["User not found"]));
@@ -58,10 +59,12 @@ router.get('/', async (req, res) => {
 });
 
 // Add item to cart
-router.post('/add', async (req, res) => {
+router.post('/add', authUser, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userEmail = req.userId;
         const { itemGuid, itemType, quantity = 1 } = req.body;
+
+        console.log('Add to cart request:', { userEmail, itemGuid, itemType, quantity });
 
         if (!itemGuid || !itemType) {
             return res.status(400).json(makeError(["Item GUID and type are required"]));
@@ -74,7 +77,9 @@ router.post('/add', async (req, res) => {
         // Verify item exists and is available
         let item = null;
         if (itemType === 'cue') {
+            console.log('Looking for cue with guid:', itemGuid);
             item = await Cue.findOne({ guid: itemGuid });
+            console.log('Found cue:', item ? 'Yes' : 'No', item ? `Status: ${item.status}` : '');
             if (!item || item.status !== 'Available') {
                 return res.status(400).json(makeError(["Cue is not available"]));
             }
@@ -85,10 +90,12 @@ router.post('/add', async (req, res) => {
             }
         }
 
-        const user = await User.findById(userId);
+        const user = await User.findOne({ email: userEmail });
         if (!user) {
             return res.status(404).json(makeError(["User not found"]));
         }
+
+        console.log('User found, current cart size:', user.cart.length);
 
         // Check if item already exists in cart
         const existingCartItemIndex = user.cart.findIndex(
@@ -113,16 +120,18 @@ router.post('/add', async (req, res) => {
         }
 
         await user.save();
+        console.log('Item successfully added to cart');
         res.status(200).json(makeResponse("success", "Item added to cart successfully"));
     } catch (error) {
+        console.error('Error adding item to cart:', error);
         res.status(500).json(makeError(["Internal server error"]));
     }
 });
 
 // Update cart item quantity
-router.put('/update/:cartItemId', async (req, res) => {
+router.put('/update/:cartItemId', authUser, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userEmail = req.userId;
         const { cartItemId } = req.params;
         const { quantity } = req.body;
 
@@ -130,7 +139,7 @@ router.put('/update/:cartItemId', async (req, res) => {
             return res.status(400).json(makeError(["Invalid quantity"]));
         }
 
-        const user = await User.findById(userId);
+        const user = await User.findOne({ email: userEmail });
         if (!user) {
             return res.status(404).json(makeError(["User not found"]));
         }
@@ -155,12 +164,12 @@ router.put('/update/:cartItemId', async (req, res) => {
 });
 
 // Remove item from cart
-router.delete('/remove/:cartItemId', async (req, res) => {
+router.delete('/remove/:cartItemId', authUser, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userEmail = req.userId;
         const { cartItemId } = req.params;
 
-        const user = await User.findById(userId);
+        const user = await User.findOne({ email: userEmail });
         if (!user) {
             return res.status(404).json(makeError(["User not found"]));
         }
@@ -180,11 +189,11 @@ router.delete('/remove/:cartItemId', async (req, res) => {
 });
 
 // Clear entire cart
-router.delete('/clear', async (req, res) => {
+router.delete('/clear', authUser, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userEmail = req.userId;
         
-        const user = await User.findById(userId);
+        const user = await User.findOne({ email: userEmail });
         if (!user) {
             return res.status(404).json(makeError(["User not found"]));
         }
