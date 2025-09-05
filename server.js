@@ -10,10 +10,17 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
+
 app.use(cors({
   origin: 'http://localhost:3000',  //Update for production and if your domain is different for testing.
   credentials: true                 //Needed to store and send cookies.
 }));
+
+app.options('*', cors({
+  origin: 'http://localhost:3000',
+  credentials: true
+}));
+
 
 // log all requests for debugging purposes
 app.use((req, res, next) => {
@@ -88,6 +95,9 @@ app.use('/search', search);
 
 const scripts = require('./routes/admin/scripts');
 app.use('/scripts', scripts);
+
+const email = require('./routes/email');
+app.use('/email', email)
 
 // Sample route
 app.get('/', (req, res) => {

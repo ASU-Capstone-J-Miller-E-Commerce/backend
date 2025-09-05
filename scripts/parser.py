@@ -20,8 +20,8 @@ print("CSV Parser for J. Miller C.C. Project")
 print(". . . Starting up . . .")
 
 #GLOBAL VARS AND ENV VARIABLES.
-DO_CONNECT = False                           #Global flag for connecting. Leave false for testing. 
-CLEAR_DB_FLAG = False                        #Set to false if you do not wish to remove all entires from db before uploading.
+DO_CONNECT = True                           #Global flag for connecting. Leave false for testing. 
+CLEAR_DB_FLAG = True                        #Set to false if you do not wish to remove all entires from db before uploading.
 
 #Load ENV variables.
 env_path= Path(__file__).resolve().parent.parent / ".env"
@@ -31,7 +31,6 @@ client_name = os.getenv("CLIENT_NAME")
 #DO Credentials from .env
 DO_SPACES_KEY = os.getenv("DO_SPACES_KEY")
 DO_SPACES_SECRET = os.getenv("DO_SPACES_SECRET")
-DO_REGION = os.getenv("DO_REGION")
 DO_SPACE_NAME = os.getenv("DO_SPACE_NAME")
 DO_ENDPOINT = os.getenv("DO_ENDPOINT")
 DO_FULL_URL_PRE = os.getenv("DO_FULL_URL_PRE")
@@ -267,7 +266,7 @@ if(DO_CONNECT):
         print('Connecting to Digital Ocean . . .')
         session = boto3.session.Session()
         client = session.client('s3',
-                                region_name = DO_REGION,
+                                region_name = 'nyc3',
                                 endpoint_url = DO_ENDPOINT,
                                 aws_access_key_id=DO_SPACES_KEY,
                                 aws_secret_access_key=DO_SPACES_SECRET)
@@ -292,7 +291,7 @@ if(DO_CONNECT):
     print('Connecting to Digital Ocean . . .')
     session = boto3.session.Session()
     client = session.client('s3',
-                            region_name = DO_REGION,
+                            region_name = 'nyc3',
                             endpoint_url = DO_ENDPOINT,
                             aws_access_key_id=DO_SPACES_KEY,
                             aws_secret_access_key=DO_SPACES_SECRET)
