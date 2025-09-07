@@ -28,7 +28,6 @@ router.get('/', authUser, async (req, res) => {
                 }
 
                 return {
-                    cartItemId: cartItem._id,
                     itemGuid: cartItem.itemGuid,
                     itemType: cartItem.itemType,
                     quantity: cartItem.quantity,
@@ -44,7 +43,7 @@ router.get('/', authUser, async (req, res) => {
         // If some items were removed, update the user's cart
         if (validCartItems.length !== user.cart.length) {
             user.cart = user.cart.filter(cartItem => 
-                validCartItems.some(validItem => validItem.cartItemId.equals(cartItem._id))
+                validCartItems.some(validItem => validItem.itemGuid === cartItem.itemGuid)
             );
             await user.save();
         }
@@ -130,10 +129,10 @@ router.post('/add', authUser, async (req, res) => {
 });
 
 // Update cart item quantity
-router.put('/update/:cartItemId', authUser, async (req, res) => {
+router.put('/update/:itemGuid', authUser, async (req, res) => {
     try {
         const userEmail = req.userId;
-        const { cartItemId } = req.params;
+        const { itemGuid } = req.params;
         const { quantity } = req.body;
 
         if (!quantity || quantity < 1) {
@@ -145,7 +144,7 @@ router.put('/update/:cartItemId', authUser, async (req, res) => {
             return res.status(404).json(makeError(["User not found"]));
         }
 
-        const cartItem = user.cart.id(cartItemId);
+        const cartItem = user.cart.find(item => item.itemGuid === itemGuid);
         if (!cartItem) {
             return res.status(404).json(makeError(["Cart item not found"]));
         }
@@ -170,17 +169,17 @@ router.put('/update/:cartItemId', authUser, async (req, res) => {
 });
 
 // Remove item from cart
-router.delete('/remove/:cartItemId', authUser, async (req, res) => {
+router.delete('/remove/:itemGuid', authUser, async (req, res) => {
     try {
         const userEmail = req.userId;
-        const { cartItemId } = req.params;
+        const { itemGuid } = req.params;
 
         const user = await User.findOne({ email: userEmail });
         if (!user) {
             return res.status(404).json(makeError(["User not found"]));
         }
 
-        const cartItemIndex = user.cart.findIndex(item => item._id.toString() === cartItemId);
+        const cartItemIndex = user.cart.findIndex(item => item.itemGuid === itemGuid);
         if (cartItemIndex === -1) {
             return res.status(404).json(makeError(["Cart item not found"]));
         }

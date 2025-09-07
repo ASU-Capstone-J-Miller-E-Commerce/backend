@@ -198,7 +198,6 @@ router.get('/check-auth', async (req, res) => {
                     }
 
                     return {
-                        cartItemId: cartItem._id,
                         itemGuid: cartItem.itemGuid,
                         itemType: cartItem.itemType,
                         quantity: cartItem.quantity,
@@ -214,7 +213,7 @@ router.get('/check-auth', async (req, res) => {
             // If some items were removed, update the user's cart
             if (validCartItems.length !== userData.cart.length) {
                 userData.cart = userData.cart.filter(cartItem => 
-                    validCartItems.some(validItem => validItem.cartItemId.equals(cartItem._id))
+                    validCartItems.some(validItem => validItem.itemGuid === cartItem.itemGuid)
                 );
                 await userData.save();
             }
