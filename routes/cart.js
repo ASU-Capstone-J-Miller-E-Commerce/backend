@@ -64,8 +64,6 @@ router.post('/add', authUser, async (req, res) => {
         const userEmail = req.userId;
         const { itemGuid, itemType, quantity = 1 } = req.body;
 
-        console.log('Add to cart request:', { userEmail, itemGuid, itemType, quantity });
-
         if (!itemGuid || !itemType) {
             return res.status(400).json(makeError(["Item GUID and type are required"]));
         }
@@ -77,9 +75,7 @@ router.post('/add', authUser, async (req, res) => {
         // Verify item exists and is available
         let item = null;
         if (itemType === 'cue') {
-            console.log('Looking for cue with guid:', itemGuid);
             item = await Cue.findOne({ guid: itemGuid });
-            console.log('Found cue:', item ? 'Yes' : 'No', item ? `Status: ${item.status}` : '');
             if (!item || item.status !== 'Available') {
                 return res.status(400).json(makeError(["Cue is not available"]));
             }
@@ -107,10 +103,17 @@ router.post('/add', authUser, async (req, res) => {
             if (itemType === 'cue') {
                 return res.status(400).json(makeError(["Cue is already in your cart"]));
             }
-            // For accessories, update quantity
-            user.cart[existingCartItemIndex].quantity += quantity;
+            // For accessories, update quantity but enforce max of 5
+            const newQuantity = user.cart[existingCartItemIndex].quantity + quantity;
+            if (newQuantity > 5) {
+                return res.status(400).json(makeError(["Maximum quantity of 5 allowed per accessory"]));
+            }
+            user.cart[existingCartItemIndex].quantity = newQuantity;
         } else {
             // Add new item to cart
+            if (itemType === 'accessory' && quantity > 5) {
+                return res.status(400).json(makeError(["Maximum quantity of 5 allowed per accessory"]));
+            }
             user.cart.push({
                 itemGuid,
                 itemType,
@@ -120,10 +123,36 @@ router.post('/add', authUser, async (req, res) => {
         }
 
         await user.save();
-        console.log('Item successfully added to cart');
-        res.status(200).json(makeResponse("success", "Item added to cart successfully"));
+        
+        // Return updated cart data after successful add
+        const updatedCartWithDetails = await Promise.all(
+            user.cart.map(async (cartItem) => {
+                let itemDetails = null;
+                
+                if (cartItem.itemType === 'cue') {
+                    itemDetails = await Cue.findOne({ guid: cartItem.itemGuid });
+                } else if (cartItem.itemType === 'accessory') {
+                    itemDetails = await Accessory.findOne({ guid: cartItem.itemGuid });
+                }
+
+                return {
+                    cartItemId: cartItem._id,
+                    itemGuid: cartItem.itemGuid,
+                    itemType: cartItem.itemType,
+                    quantity: cartItem.quantity,
+                    addedAt: cartItem.addedAt,
+                    itemDetails: itemDetails
+                };
+            })
+        );
+
+        const validCartItems = updatedCartWithDetails.filter(item => item.itemDetails);
+        
+        res.status(200).json(makeResponse("success", {
+            items: validCartItems,
+            totalItems: validCartItems.reduce((sum, item) => sum + item.quantity, 0)
+        }, ["Item added to cart successfully"]));
     } catch (error) {
-        console.error('Error adding item to cart:', error);
         res.status(500).json(makeError(["Internal server error"]));
     }
 });
@@ -154,10 +183,42 @@ router.put('/update/:cartItemId', authUser, async (req, res) => {
             return res.status(400).json(makeError(["Cue quantity cannot be changed"]));
         }
 
+        // Don't allow more than 5 of any accessory
+        if (cartItem.itemType === 'accessory' && quantity > 5) {
+            return res.status(400).json(makeError(["Maximum quantity of 5 allowed per accessory"]));
+        }
+
         cartItem.quantity = quantity;
         await user.save();
 
-        res.status(200).json(makeResponse('success'));
+        // Return updated cart data after successful update
+        const updatedCartWithDetails = await Promise.all(
+            user.cart.map(async (cartItem) => {
+                let itemDetails = null;
+                
+                if (cartItem.itemType === 'cue') {
+                    itemDetails = await Cue.findOne({ guid: cartItem.itemGuid });
+                } else if (cartItem.itemType === 'accessory') {
+                    itemDetails = await Accessory.findOne({ guid: cartItem.itemGuid });
+                }
+
+                return {
+                    cartItemId: cartItem._id,
+                    itemGuid: cartItem.itemGuid,
+                    itemType: cartItem.itemType,
+                    quantity: cartItem.quantity,
+                    addedAt: cartItem.addedAt,
+                    itemDetails: itemDetails
+                };
+            })
+        );
+
+        const validCartItems = updatedCartWithDetails.filter(item => item.itemDetails);
+
+        res.status(200).json(makeResponse('success', {
+            items: validCartItems,
+            totalItems: validCartItems.reduce((sum, item) => sum + item.quantity, 0)
+        }, ["Cart updated successfully"]));
     } catch (error) {
         res.status(500).json(makeError(["Internal server error"]));
     }
@@ -182,7 +243,34 @@ router.delete('/remove/:cartItemId', authUser, async (req, res) => {
         user.cart.splice(cartItemIndex, 1);
         await user.save();
 
-        res.json(makeResponse('success'));
+        // Return updated cart data after successful removal
+        const updatedCartWithDetails = await Promise.all(
+            user.cart.map(async (cartItem) => {
+                let itemDetails = null;
+                
+                if (cartItem.itemType === 'cue') {
+                    itemDetails = await Cue.findOne({ guid: cartItem.itemGuid });
+                } else if (cartItem.itemType === 'accessory') {
+                    itemDetails = await Accessory.findOne({ guid: cartItem.itemGuid });
+                }
+
+                return {
+                    cartItemId: cartItem._id,
+                    itemGuid: cartItem.itemGuid,
+                    itemType: cartItem.itemType,
+                    quantity: cartItem.quantity,
+                    addedAt: cartItem.addedAt,
+                    itemDetails: itemDetails
+                };
+            })
+        );
+
+        const validCartItems = updatedCartWithDetails.filter(item => item.itemDetails);
+
+        res.json(makeResponse('success', {
+            items: validCartItems,
+            totalItems: validCartItems.reduce((sum, item) => sum + item.quantity, 0)
+        }, ["Item removed from cart successfully"]));
     } catch (error) {
         res.status(500).json(makeError(["Internal server error"]));
     }
@@ -201,7 +289,10 @@ router.delete('/clear', authUser, async (req, res) => {
         user.cart = [];
         await user.save();
 
-        res.status(200).json(makeResponse(true, "Cart cleared successfully"));
+        res.status(200).json(makeResponse("success", {
+            items: [],
+            totalItems: 0
+        }, ["Cart cleared successfully"]));
     } catch (error) {
         res.status(500).json(makeError(["Internal server error"]));
     }
