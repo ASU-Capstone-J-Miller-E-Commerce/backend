@@ -22,9 +22,11 @@ router.get('/', authUser, async (req, res) => {
                 let itemDetails = null;
                 
                 if (cartItem.itemType === 'cue') {
-                    itemDetails = await Cue.findOne({ guid: cartItem.itemGuid });
+                    itemDetails = await Cue.findOne({ guid: cartItem.itemGuid })
+                        .select('guid cueNumber name price status imageUrls description -_id');
                 } else if (cartItem.itemType === 'accessory') {
-                    itemDetails = await Accessory.findOne({ guid: cartItem.itemGuid });
+                    itemDetails = await Accessory.findOne({ guid: cartItem.itemGuid })
+                        .select('guid accessoryNumber name price status imageUrls description -_id');
                 }
 
                 return {

@@ -20,7 +20,8 @@ const userSchema = new mongoose.Schema(
             itemGuid: { type: String, required: true },
             itemType: { type: String, enum: ['cue', 'accessory'], required: true },
             quantity: { type: Number, default: 1, min: 1 },
-            addedAt: { type: Date, default: Date.now }
+            addedAt: { type: Date, default: Date.now },
+            _id: false
         }]
     }
 )
