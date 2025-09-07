@@ -15,7 +15,13 @@ const userSchema = new mongoose.Schema(
             hex: String,
             base32: String,
             otpauth_URL: String
-        }
+        },
+        cart: [{
+            itemGuid: { type: String, required: true },
+            itemType: { type: String, enum: ['cue', 'accessory'], required: true },
+            quantity: { type: Number, default: 1, min: 1 },
+            addedAt: { type: Date, default: Date.now }
+        }]
     }
 )
 
