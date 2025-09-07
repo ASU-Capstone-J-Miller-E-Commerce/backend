@@ -8,6 +8,7 @@ const router = express.Router()
 const { sendEmail } = require('../sendMail')
 const { makeData } = require('../response/makeResponse')
 const { makeError, makeResponse } = require('../response/makeResponse')
+const nodemailer = require("nodemailer");
 const speakeasy = require("speakeasy")
 const qrcode = require("qrcode")
 require('dotenv').config()
@@ -65,7 +66,7 @@ router.post('/register', async (req, res) =>
         //Int is the salt length to generate, longer value is more secure.
         const passHash = await bcrypt.hash(password, 10);
 
-        const newUser = new user( { email: email, password: passHash, firstName: fName, lastName: lName, role: "User"});
+        const newUser = new user( { email: email, password: passHash, firstName: fName, lastName: lName, role: "User", emailNotos: False});
         await newUser.save();
 
         const accountEmailNotification = returnMessage(email)
@@ -388,7 +389,6 @@ router.post('/verify2FALogin', async (req, res) => {
         res.status(400).json(makeError(['Something went wrong.']));
     }
 });
-
 
 module.exports = router;
 module.exports.authUser = authUser;

@@ -15,7 +15,8 @@ const userSchema = new mongoose.Schema(
             hex: String,
             base32: String,
             otpauth_URL: String
-        }
+        },
+        emailNotos: {type: Boolean, required: True }
     }
 )
 
