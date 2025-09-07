@@ -2,6 +2,7 @@ import uuid
 import pandas as pd # type: ignore
 import os
 from pymongo import MongoClient # type: ignore
+from dotenv import load_dotenv
 from uuid import uuid4
 from datetime import datetime
 from pprint import pprint
@@ -9,7 +10,6 @@ import time
 import boto3
 from botocore.client import Config
 from pathlib import Path
-
 
 def clean_color(color):
     if pd.isna(color):
@@ -20,28 +20,33 @@ print("CSV Parser for J. Miller C.C. Project")
 print(". . . Starting up . . .")
 
 #GLOBAL VARS AND ENV VARIABLES.
-DO_CONNECT = True                           #Global flag for connecting. Leave false for testing. 
-CLEAR_DB_FLAG = True                        #Set to false if you do not wish to remove all entires from db before uploading.
+DO_CONNECT = False                           #Global flag for connecting. Leave false for testing. 
+CLEAR_DB_FLAG = False                        #Set to false if you do not wish to remove all entires from db before uploading.
 
+#Load ENV variables.
+env_path= Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(dotenv_path=env_path)
+mongo_url = os.getenv("DATABASE_URL")
+client_name = os.getenv("CLIENT_NAME")
+#DO Credentials from .env
+DO_SPACES_KEY = os.getenv("DO_SPACES_KEY")
+DO_SPACES_SECRET = os.getenv("DO_SPACES_SECRET")
+DO_REGION = os.getenv("DO_REGION")
+DO_SPACE_NAME = os.getenv("DO_SPACE_NAME")
+DO_ENDPOINT = os.getenv("DO_ENDPOINT")
+DO_FULL_URL_PRE = os.getenv("DO_FULL_URL_PRE")
+
+#Relative Path Variables
 base_dir = os.path.dirname(os.path.abspath(__file__))
 crystals_path = base_dir + '/excelDocs/crystals.xlsx'   #Replace with your path if manual.
 woods_path = base_dir + '/excelDocs/woods.xlsx'         #Replace with your path if manual.
 crystals_image_dir = base_dir + '/images/Crystals'
 woods_image_dir = base_dir + '/images/Woods'
-mongo_url = 'mongodb+srv://development:1ATrSEZVf2sI24GL@cluster0.cgtuc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'
-client_name = 'test'                        #Update this and above value if changed.
-crystals = pd.ExcelFile(crystals_path)
-woods = pd.ExcelFile(woods_path)
-
-#DO Credentials
-DO_SPACES_KEY = 'DO00XW3PYF6VJGL2CXVX'
-DO_SPACES_SECRET = 'UIMqKOuc3aM+Jh8Tbd3xAxT6UkxrSmxJ0q2KNxsovrg'
-DO_REGION = 'nyc3'
-DO_SPACE_NAME = 'jmillercustomcues'
-DO_ENDPOINT = f'https://{DO_REGION}.digitaloceanspaces.com'
-DO_FULL_URL_PRE = 'https://jmillercustomcues.nyc3.digitaloceanspaces.com/'
 imageServerURL = 'images/materials/'
 
+#Load excel files for crystals and woods
+crystals = pd.ExcelFile(crystals_path)
+woods = pd.ExcelFile(woods_path)
 
 crystalData = {}
 woodData = {}
@@ -94,11 +99,6 @@ print("Crystal Sheets loaded:", list(crystalData.keys()))
 print(df1.head())
 print("Wood Sheets loaded:", list(crystalData.keys()))
 print(df2.head())
-
-
-
-
-
 
 # CRYSTALS
 print('Creating DataFrame Models . . . ')
@@ -165,11 +165,6 @@ for _, row in df1.iterrows():
     crystal_arr.append(crystal)
 
 print('Crystal Dataframe Completed.')
-
-
-
-
-
 
 # WOODS
 print("Creating Wood Objects:")
@@ -252,33 +247,6 @@ for _, row in df2.iterrows():
 
 
 print('Wood Dataframe Completed.')
-
-
-
-
-
-
-#PRINTS USED FOR TESTING vvvvv
-
-#print("Crystal Data")
-#pprint(crystal_arr)
-#print("Wood Data:")
-#pprint(wood_arr)
-
-#for tuple in image_arr:
-#    pprint(tuple)
-
-#for wood in wood_arr:
-#    print(wood['colors'])
-#    if wood['colors'] == '':
-#      print(wood['commonName']) 
-#for crystal in crystal_arr:
-    #pprint(crystal)
-
-
-
-
-
 
 #ONLY RUNS WHEN FLAG IS SET.
 #THIS WILL CONNECT AND MAKE CHANGES TO THE DATABASE.
