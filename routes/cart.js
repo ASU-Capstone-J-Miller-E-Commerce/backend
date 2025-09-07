@@ -123,35 +123,7 @@ router.post('/add', authUser, async (req, res) => {
         }
 
         await user.save();
-        
-        // Return updated cart data after successful add
-        const updatedCartWithDetails = await Promise.all(
-            user.cart.map(async (cartItem) => {
-                let itemDetails = null;
-                
-                if (cartItem.itemType === 'cue') {
-                    itemDetails = await Cue.findOne({ guid: cartItem.itemGuid });
-                } else if (cartItem.itemType === 'accessory') {
-                    itemDetails = await Accessory.findOne({ guid: cartItem.itemGuid });
-                }
-
-                return {
-                    cartItemId: cartItem._id,
-                    itemGuid: cartItem.itemGuid,
-                    itemType: cartItem.itemType,
-                    quantity: cartItem.quantity,
-                    addedAt: cartItem.addedAt,
-                    itemDetails: itemDetails
-                };
-            })
-        );
-
-        const validCartItems = updatedCartWithDetails.filter(item => item.itemDetails);
-        
-        res.status(200).json(makeResponse("success", {
-            items: validCartItems,
-            totalItems: validCartItems.reduce((sum, item) => sum + item.quantity, 0)
-        }, ["Item added to cart successfully"]));
+        res.status(200).json(makeResponse("success", false, ["Item added to cart successfully"]));
     } catch (error) {
         res.status(500).json(makeError(["Internal server error"]));
     }
@@ -191,34 +163,7 @@ router.put('/update/:cartItemId', authUser, async (req, res) => {
         cartItem.quantity = quantity;
         await user.save();
 
-        // Return updated cart data after successful update
-        const updatedCartWithDetails = await Promise.all(
-            user.cart.map(async (cartItem) => {
-                let itemDetails = null;
-                
-                if (cartItem.itemType === 'cue') {
-                    itemDetails = await Cue.findOne({ guid: cartItem.itemGuid });
-                } else if (cartItem.itemType === 'accessory') {
-                    itemDetails = await Accessory.findOne({ guid: cartItem.itemGuid });
-                }
-
-                return {
-                    cartItemId: cartItem._id,
-                    itemGuid: cartItem.itemGuid,
-                    itemType: cartItem.itemType,
-                    quantity: cartItem.quantity,
-                    addedAt: cartItem.addedAt,
-                    itemDetails: itemDetails
-                };
-            })
-        );
-
-        const validCartItems = updatedCartWithDetails.filter(item => item.itemDetails);
-
-        res.status(200).json(makeResponse('success', {
-            items: validCartItems,
-            totalItems: validCartItems.reduce((sum, item) => sum + item.quantity, 0)
-        }, ["Cart updated successfully"]));
+        res.status(200).json(makeResponse("success", false, ["Item updated in cart successfully"]));
     } catch (error) {
         res.status(500).json(makeError(["Internal server error"]));
     }
@@ -243,34 +188,7 @@ router.delete('/remove/:cartItemId', authUser, async (req, res) => {
         user.cart.splice(cartItemIndex, 1);
         await user.save();
 
-        // Return updated cart data after successful removal
-        const updatedCartWithDetails = await Promise.all(
-            user.cart.map(async (cartItem) => {
-                let itemDetails = null;
-                
-                if (cartItem.itemType === 'cue') {
-                    itemDetails = await Cue.findOne({ guid: cartItem.itemGuid });
-                } else if (cartItem.itemType === 'accessory') {
-                    itemDetails = await Accessory.findOne({ guid: cartItem.itemGuid });
-                }
-
-                return {
-                    cartItemId: cartItem._id,
-                    itemGuid: cartItem.itemGuid,
-                    itemType: cartItem.itemType,
-                    quantity: cartItem.quantity,
-                    addedAt: cartItem.addedAt,
-                    itemDetails: itemDetails
-                };
-            })
-        );
-
-        const validCartItems = updatedCartWithDetails.filter(item => item.itemDetails);
-
-        res.json(makeResponse('success', {
-            items: validCartItems,
-            totalItems: validCartItems.reduce((sum, item) => sum + item.quantity, 0)
-        }, ["Item removed from cart successfully"]));
+        res.json(makeResponse("success", false, ["Item removed from cart successfully"]));
     } catch (error) {
         res.status(500).json(makeError(["Internal server error"]));
     }
