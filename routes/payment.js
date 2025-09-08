@@ -58,12 +58,40 @@ router.post('/create-checkout-session', getCartItems, async (req, res) => {
                 submit_type: 'pay',
                 billing_address_collection: 'auto',
                 shipping_address_collection: {
-                  allowed_countries: ['US', 'CA'],
+                  allowed_countries: [], // Allow shipping to all countries
                 },
                 line_items: line_items,
                 mode: 'payment',
-                success_url: `${process.env.ORIGIN_URL}/success.html`,
-                cancel_url: `${process.env.ORIGIN_URL}/cancel.html`,
+                success_url: `${process.env.ORIGIN_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+                cancel_url: `${process.env.ORIGIN_URL}/checkout/cancel`,
+                
+                // Additional customization options
+                locale: 'auto', // Auto-detect customer's language
+                payment_method_types: ['card'], // Accept only cards
+                allow_promotion_codes: true, // Enable discount codes
+                
+                // Custom branding (requires business account)
+                // custom_text: {
+                //   submit: {
+                //     message: 'Thanks for choosing our custom cues!'
+                //   }
+                // },
+                
+                // Metadata for tracking
+                metadata: {
+                  order_type: 'ecommerce',
+                  source: 'website_cart'
+                },
+                
+                // Phone number collection
+                phone_number_collection: {
+                  enabled: true
+                },
+                
+                // Tax calculation (if configured in Stripe)
+                automatic_tax: {
+                  enabled: true // Set to true if you have tax calculation set up
+                }
               });
         }
         else
@@ -73,8 +101,26 @@ router.post('/create-checkout-session', getCartItems, async (req, res) => {
                 submit_type: 'pay',
                 line_items: line_items,
                 mode: 'payment',
-                success_url: `${process.env.ORIGIN_URL}/success.html`,
-                cancel_url: `${process.env.ORIGIN_URL}/cancel.html`,
+                success_url: `${process.env.ORIGIN_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+                cancel_url: `${process.env.ORIGIN_URL}/checkout/cancel`,
+                
+                // Additional customization options
+                locale: 'auto',
+                payment_method_types: ['card'],
+                allow_promotion_codes: true,
+                
+                metadata: {
+                  order_type: 'ecommerce',
+                  source: 'website_cart'
+                },
+                
+                phone_number_collection: {
+                  enabled: true
+                },
+                
+                automatic_tax: {
+                  enabled: true
+                }
               });
         }
         
