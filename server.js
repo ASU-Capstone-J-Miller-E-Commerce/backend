@@ -84,6 +84,9 @@ app.use('/admin/analytics', analytics);
 const accounts = require('./routes/authorization');
 app.use('/account', accounts);
 
+const cart = require('./routes/cart');
+app.use('/cart', cart);
+
 const image =  require('./routes/admin/image');
 app.use('/admin/image', image);
 

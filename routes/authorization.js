@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken')
 const validator = require('validator')
 const user = require('../models/user')
+const Cue = require('../models/cue')
+const Accessory = require('../models/accessory')
 const router = express.Router()
 const { sendEmail } = require('../sendMail')
 const { makeData } = require('../response/makeResponse')
@@ -185,7 +187,41 @@ router.get('/check-auth', async (req, res) => {
                 return res.status(200).json(makeData({ authenticated: false }));
             }
 
-            // return both authentication status and user data
+            // Populate cart items with actual product details
+            const cartWithDetails = await Promise.all(
+                userData.cart.map(async (cartItem) => {
+                    let itemDetails = null;
+                    
+                    if (cartItem.itemType === 'cue') {
+                        itemDetails = await Cue.findOne({ guid: cartItem.itemGuid })
+                            .select('guid cueNumber name price status imageUrls description -_id');
+                    } else if (cartItem.itemType === 'accessory') {
+                        itemDetails = await Accessory.findOne({ guid: cartItem.itemGuid })
+                            .select('guid accessoryNumber name price status imageUrls description -_id');
+                    }
+
+                    return {
+                        itemGuid: cartItem.itemGuid,
+                        itemType: cartItem.itemType,
+                        quantity: cartItem.quantity,
+                        addedAt: cartItem.addedAt,
+                        itemDetails: itemDetails
+                    };
+                })
+            );
+
+            // Filter out items that no longer exist
+            const validCartItems = cartWithDetails.filter(item => item.itemDetails);
+
+            // If some items were removed, update the user's cart
+            if (validCartItems.length !== userData.cart.length) {
+                userData.cart = userData.cart.filter(cartItem => 
+                    validCartItems.some(validItem => validItem.itemGuid === cartItem.itemGuid)
+                );
+                await userData.save();
+            }
+
+            // return both authentication status, user data, and cart
             return res.status(200).json(makeData({
                 authenticated: true,
                 email: userData.email,
@@ -194,6 +230,10 @@ router.get('/check-auth', async (req, res) => {
                 role: userData.role,
                 TFAEnabled: userData.TFAEnabled,
                 isAdmin: (userData.role === 'Admin' && userData.TFAEnabled) ? true : false,
+                cart: {
+                    items: validCartItems,
+                    totalItems: validCartItems.reduce((sum, item) => sum + item.quantity, 0)
+                }
             }));
         } catch (tokenError) {
             // token exists but is invalid (expired or tampered)

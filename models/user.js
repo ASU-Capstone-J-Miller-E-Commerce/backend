@@ -16,7 +16,13 @@ const userSchema = new mongoose.Schema(
             base32: String,
             otpauth_URL: String
         },
-        emailNotos: {type: Boolean, required: True }
+        emailNotos: {type: Boolean, required: True },
+        cart: [{
+            itemGuid: { type: String, required: true },
+            itemType: { type: String, enum: ['cue', 'accessory'], required: true },
+            quantity: { type: Number, default: 1, min: 1 },
+            addedAt: { type: Date, default: Date.now }
+        }]
     }
 )
 
