@@ -76,7 +76,9 @@ router.post('/create-checkout-session', getCartItems, async (req, res) => {
             metadata: {
               order_type: 'ecommerce',
               source: 'website_cart',
-              shipping_country: req.body.shippingCountry
+              shipping_country: req.body.shippingCountry,
+              cue_guids: JSON.stringify(res.cues.map(cue => cue.guid)),
+              accessory_items: JSON.stringify(res.accessories.map(acc => ({ guid: acc.accessory.guid, quantity: acc.quantity })))
             },
             
             // Phone number collection
@@ -99,6 +101,54 @@ router.post('/create-checkout-session', getCartItems, async (req, res) => {
         return res.status(500).json(makeError(["internal server error, please try again later or contact support"]))
     }
   
+});
+
+// Verify payment session and get order details
+router.get('/verify-session/:session_id', async (req, res) => {
+    try {
+        const session = await stripe.checkout.sessions.retrieve(req.params.session_id, {
+            expand: ['line_items', 'line_items.data.price.product']
+        });
+
+        if (session.payment_status !== 'paid') {
+            return res.status(400).json(makeError(['Payment not completed']));
+        }
+
+        // Get the payment intent to get more details
+        const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent);
+
+        // Extract order information from metadata
+        const cueGuids = session.metadata.cue_guids ? JSON.parse(session.metadata.cue_guids) : [];
+        const accessoryItems = session.metadata.accessory_items ? JSON.parse(session.metadata.accessory_items) : [];
+
+        const orderDetails = {
+            sessionId: session.id,
+            paymentIntentId: paymentIntent.id,
+            orderNumber: `ORD-${Date.now()}`, // Generate a user-friendly order number
+            status: 'paid',
+            amount: session.amount_total / 100, // Convert from cents
+            currency: session.currency,
+            customer: {
+                email: session.customer_details.email,
+                name: session.customer_details.name,
+                phone: session.customer_details.phone
+            },
+            shipping: session.shipping_details,
+            billing: session.customer_details.address,
+            items: {
+                cues: cueGuids,
+                accessories: accessoryItems
+            },
+            createdAt: new Date(session.created * 1000),
+            metadata: session.metadata
+        };
+
+        await processCompletedOrder(orderDetails);
+
+        return res.status(200).json(makeResponse('success', orderDetails, ['Payment verified successfully'], false));
+    } catch (error) {
+        return res.status(500).json(makeError(['Failed to verify payment session']));
+    }
 });
 
 async function getCartItems(req, res, next) {
@@ -196,6 +246,113 @@ async function getShippingOptionsForCountry(countryCode, cartTotal) {
     } catch (error) {
         console.error('Error fetching shipping rates:', error);
         return [];
+    }
+}
+
+// Stripe webhook endpoint for handling events
+router.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    
+    let event;
+
+    try {
+        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } catch (err) {
+        console.log(`Webhook signature verification failed.`, err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    // Handle the event
+    switch (event.type) {
+        case 'checkout.session.completed':
+            const session = event.data.object;
+            console.log('Payment succeeded for session:', session.id);
+            
+            // Get full session details with line items
+            const fullSession = await stripe.checkout.sessions.retrieve(session.id, {
+                expand: ['line_items', 'line_items.data.price.product']
+            });
+
+            // Process the order
+            await handleSuccessfulPayment(fullSession);
+            break;
+        
+        case 'payment_intent.succeeded':
+            const paymentIntent = event.data.object;
+            console.log('PaymentIntent succeeded:', paymentIntent.id);
+            break;
+        
+        default:
+            console.log(`Unhandled event type ${event.type}`);
+    }
+
+    res.json({received: true});
+});
+
+async function handleSuccessfulPayment(session) {
+    try {
+        // Extract order information from metadata
+        const cueGuids = session.metadata.cue_guids ? JSON.parse(session.metadata.cue_guids) : [];
+        const accessoryItems = session.metadata.accessory_items ? JSON.parse(session.metadata.accessory_items) : [];
+
+        const orderDetails = {
+            sessionId: session.id,
+            orderNumber: `ORD-${Date.now()}`,
+            status: 'paid',
+            amount: session.amount_total / 100,
+            currency: session.currency,
+            customer: {
+                email: session.customer_details.email,
+                name: session.customer_details.name,
+                phone: session.customer_details.phone
+            },
+            shipping: session.shipping_details,
+            billing: session.customer_details.address,
+            items: {
+                cues: cueGuids,
+                accessories: accessoryItems
+            },
+            createdAt: new Date(session.created * 1000),
+            metadata: session.metadata
+        };
+
+        await processCompletedOrder(orderDetails);
+        
+        console.log('Order processed successfully for session:', session.id);
+    } catch (error) {
+        console.error('Error processing successful payment:', error);
+        // Consider implementing retry logic or dead letter queue here
+    }
+}
+
+async function processCompletedOrder(orderDetails) {
+    try {
+        // 1. Create order record in database
+        // const order = await Order.create(orderDetails);
+        
+        // 2. Update inventory - mark cues as sold
+        if (orderDetails.items.cues && orderDetails.items.cues.length > 0) {
+            await Cue.updateMany(
+                { guid: { $in: orderDetails.items.cues } },
+                { status: 'Sold' }
+            );
+        }
+
+        // 3. Send confirmation email
+        // await sendOrderConfirmationEmail(orderDetails);
+
+        // 4. Log analytics
+        console.log('Order analytics:', {
+            orderNumber: orderDetails.orderNumber,
+            amount: orderDetails.amount,
+            itemCount: (orderDetails.items.cues?.length || 0) + (orderDetails.items.accessories?.length || 0),
+            country: orderDetails.shipping?.address?.country
+        });
+
+        return orderDetails;
+    } catch (error) {
+        throw error;
     }
 }
 
