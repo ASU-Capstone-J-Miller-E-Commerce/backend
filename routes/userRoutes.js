@@ -14,7 +14,7 @@ require('dotenv').config()
 const jwtSecret = process.env.JWT_SECRET_KEY
 
 
-router.put('/update-name/:email', async (req, res) =>
+router.put('/update-name/:email', authUser, async (req, res) =>
 {
     try
     {
@@ -56,7 +56,7 @@ router.put('/update-name/:email', async (req, res) =>
 });
 
 
-router.put('/userChangePassword', async (req, res) =>
+router.put('/userChangePassword', authUser, async (req, res) =>
     {
         try
         {

@@ -4,9 +4,10 @@ const router = express.Router()
 const Cue = require('../models/cue')
 const Accessory = require('../models/accessory')
 const { makeError, makeResponse, makeData } = require('../response/makeResponse')
+const { authUser } = require('./authorization')
 
 
-router.post('/create-checkout-session', getCartItems, async (req, res) => {
+router.post('/create-checkout-session', authUser, getCartItems, async (req, res) => {
 
     try
     {
@@ -104,7 +105,7 @@ router.post('/create-checkout-session', getCartItems, async (req, res) => {
 });
 
 // Verify payment session and get order details
-router.get('/verify-session/:session_id', async (req, res) => {
+router.get('/verify-session/:session_id', authUser, async (req, res) => {
     try {
         const session = await stripe.checkout.sessions.retrieve(req.params.session_id, {
             expand: ['line_items', 'line_items.data.price.product']
