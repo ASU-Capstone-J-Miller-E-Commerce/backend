@@ -52,14 +52,14 @@ router.post('/create-checkout-session', getCartItems, async (req, res) => {
         }
 
         // Get shipping options for the country
-        const shippingOptions = await getShippingOptionsForCountry(req.body.shipping.country, req.body.cartTotal);
+        const shippingOptions = await getShippingOptionsForCountry(req.body.shippingCountry, req.body.cartTotal);
 
         session = await stripe.checkout.sessions.create({
             customer_email: req.body.email,
             submit_type: 'pay',
-            billing_address_collection: 'auto',
+            billing_address_collection: 'required', // Still collect billing for payment
             shipping_address_collection: {
-              allowed_countries: [req.body.shipping.country], // Only allow the selected country
+              allowed_countries: [req.body.shippingCountry], // Only allow the selected country
             },
             shipping_options: shippingOptions,
             line_items: line_items,
@@ -75,7 +75,8 @@ router.post('/create-checkout-session', getCartItems, async (req, res) => {
             // Metadata for tracking
             metadata: {
               order_type: 'ecommerce',
-              source: 'website_cart'
+              source: 'website_cart',
+              shipping_country: req.body.shippingCountry
             },
             
             // Phone number collection
