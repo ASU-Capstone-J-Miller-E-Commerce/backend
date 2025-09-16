@@ -339,10 +339,19 @@ async function processCompletedOrder(orderDetails) {
             );
         }
 
-        // 3. Send confirmation email
+        // 3. Clear user's cart after successful purchase
+        if (orderDetails.customer && orderDetails.customer.email) {
+            const User = require('../models/user');
+            await User.updateOne(
+                { email: orderDetails.customer.email },
+                { $set: { cart: [] } }
+            );
+        }
+
+        // 4. Send confirmation email
         // await sendOrderConfirmationEmail(orderDetails);
 
-        // 4. Log analytics
+        // 5. Log analytics
         console.log('Order analytics:', {
             orderNumber: orderDetails.orderNumber,
             amount: orderDetails.amount,
