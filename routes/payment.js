@@ -124,7 +124,6 @@ router.get('/verify-session/:session_id', async (req, res) => {
         const orderDetails = {
             sessionId: session.id,
             paymentIntentId: paymentIntent.id,
-            orderNumber: `ORD-${Date.now()}`, // Generate a user-friendly order number
             status: 'paid',
             amount: session.amount_total / 100, // Convert from cents
             currency: session.currency,
@@ -143,9 +142,9 @@ router.get('/verify-session/:session_id', async (req, res) => {
             metadata: session.metadata
         };
 
-        await processCompletedOrder(orderDetails);
+        const enhancedOrderDetails = await processCompletedOrder(orderDetails);
 
-        return res.status(200).json(makeResponse('success', orderDetails, ['Payment verified successfully'], false));
+        return res.status(200).json(makeResponse('success', enhancedOrderDetails, ['Payment verified successfully'], false));
     } catch (error) {
         return res.status(500).json(makeError(['Failed to verify payment session']));
     }
@@ -283,6 +282,14 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
             console.log('PaymentIntent succeeded:', paymentIntent.id);
             break;
         
+        // Shipping/fulfillment events from Parcel Craft or other shipping providers
+        case 'order.updated':
+        case 'shipment.created':
+        case 'shipment.updated':
+        case 'tracking.updated':
+            await handleShippingUpdate(event);
+            break;
+        
         default:
             console.log(`Unhandled event type ${event.type}`);
     }
@@ -298,7 +305,6 @@ async function handleSuccessfulPayment(session) {
 
         const orderDetails = {
             sessionId: session.id,
-            orderNumber: `ORD-${Date.now()}`,
             status: 'paid',
             amount: session.amount_total / 100,
             currency: session.currency,
@@ -329,7 +335,55 @@ async function handleSuccessfulPayment(session) {
 async function processCompletedOrder(orderDetails) {
     try {
         // 1. Create order record in database
-        // const order = await Order.create(orderDetails);
+        const Order = require('../models/order');
+        const User = require('../models/user');
+        
+        // Verify customer exists (for validation)
+        const customer = await User.findOne({ email: orderDetails.customer.email });
+        if (!customer) {
+            throw new Error(`Customer not found with email: ${orderDetails.customer.email}`);
+        }
+
+        // Prepare order items with GUIDs
+        const orderItems = {
+            cueGuids: [],
+            accessoryGuids: []
+        };
+        
+        // Add cue GUIDs to order items
+        if (orderDetails.items.cues && orderDetails.items.cues.length > 0) {
+            orderItems.cueGuids = orderDetails.items.cues;
+        }
+        
+        // Add accessory GUIDs with quantities to order items
+        if (orderDetails.items.accessories && orderDetails.items.accessories.length > 0) {
+            orderItems.accessoryGuids = orderDetails.items.accessories.map(item => ({
+                guid: item.guid,
+                quantity: item.quantity
+            }));
+        }
+
+        // Create order document
+        const order = await Order.create({
+            // Let mongoose generate the guid and orderId automatically
+            customer: orderDetails.customer.email, // Store email directly
+            orderStatus: 'confirmed',
+            totalAmount: orderDetails.amount,
+            currency: orderDetails.currency.toUpperCase(),
+            paymentStatus: 'paid',
+            paymentMethod: 'Stripe',
+            shippingAddress: orderDetails.shipping ? {
+                name: orderDetails.shipping.name,
+                address: orderDetails.shipping.address,
+                phone: orderDetails.customer.phone
+            } : {},
+            billingAddress: orderDetails.billing || {},
+            orderItems: orderItems,
+            createdAt: orderDetails.createdAt,
+            updatedAt: new Date()
+        });
+
+        console.log('Order created successfully:', order.orderId);
         
         // 2. Update inventory - mark cues as sold
         if (orderDetails.items.cues && orderDetails.items.cues.length > 0) {
@@ -340,28 +394,130 @@ async function processCompletedOrder(orderDetails) {
         }
 
         // 3. Clear user's cart after successful purchase
-        if (orderDetails.customer && orderDetails.customer.email) {
-            const User = require('../models/user');
-            await User.updateOne(
-                { email: orderDetails.customer.email },
-                { $set: { cart: [] } }
-            );
-        }
+        await User.updateOne(
+            { email: orderDetails.customer.email },
+            { $set: { cart: [] } }
+        );
 
         // 4. Send confirmation email
         // await sendOrderConfirmationEmail(orderDetails);
 
         // 5. Log analytics
         console.log('Order analytics:', {
-            orderNumber: orderDetails.orderNumber,
+            orderId: order.orderId,
             amount: orderDetails.amount,
             itemCount: (orderDetails.items.cues?.length || 0) + (orderDetails.items.accessories?.length || 0),
             country: orderDetails.shipping?.address?.country
         });
 
-        return orderDetails;
+        // Return enhanced order details with the generated orderId
+        return {
+            ...orderDetails,
+            orderId: order.orderId
+        };
     } catch (error) {
         throw error;
+    }
+}
+
+// Handle shipping updates from Parcel Craft via Stripe webhooks
+async function handleShippingUpdate(event) {
+    try {
+        const Order = require('../models/order');
+        const eventData = event.data.object;
+        
+        console.log('Processing shipping update:', event.type, eventData);
+        
+        // Extract order identification (this may vary based on how Parcel Craft sends the data)
+        let orderId = null;
+        
+        // Check various possible locations for order ID
+        if (eventData.metadata && eventData.metadata.order_id) {
+            orderId = eventData.metadata.order_id;
+        } else if (eventData.order_id) {
+            orderId = eventData.order_id;
+        } else if (eventData.reference) {
+            orderId = eventData.reference;
+        }
+        
+        if (!orderId) {
+            console.log('No order ID found in shipping update event');
+            return;
+        }
+        
+        // Find the order
+        const order = await Order.findOne({ orderId: orderId });
+        if (!order) {
+            console.log(`Order not found for ID: ${orderId}`);
+            return;
+        }
+        
+        // Update order based on event type
+        let updateData = { updatedAt: new Date() };
+        
+        switch (event.type) {
+            case 'shipment.created':
+                updateData.orderStatus = 'shipped';
+                if (eventData.tracking_number) {
+                    updateData.trackingNumber = eventData.tracking_number;
+                }
+                if (eventData.carrier) {
+                    updateData.shippingCarrier = eventData.carrier;
+                }
+                if (eventData.estimated_delivery) {
+                    updateData.expectedDelivery = new Date(eventData.estimated_delivery);
+                }
+                break;
+                
+            case 'shipment.updated':
+            case 'tracking.updated':
+                if (eventData.status) {
+                    // Map shipping statuses to our order statuses
+                    switch (eventData.status.toLowerCase()) {
+                        case 'in_transit':
+                        case 'in transit':
+                            updateData.orderStatus = 'shipped';
+                            break;
+                        case 'delivered':
+                            updateData.orderStatus = 'delivered';
+                            break;
+                        case 'exception':
+                        case 'failed_attempt':
+                            updateData.orderStatus = 'delivery_exception';
+                            break;
+                        default:
+                            updateData.orderStatus = 'shipped';
+                    }
+                }
+                
+                if (eventData.tracking_number) {
+                    updateData.trackingNumber = eventData.tracking_number;
+                }
+                
+                if (eventData.estimated_delivery) {
+                    updateData.expectedDelivery = new Date(eventData.estimated_delivery);
+                }
+                break;
+                
+            case 'order.updated':
+                // Handle general order updates
+                if (eventData.status) {
+                    updateData.orderStatus = eventData.status;
+                }
+                break;
+        }
+        
+        // Update the order
+        await Order.findByIdAndUpdate(order._id, updateData);
+        
+        console.log(`Order ${orderId} updated successfully:`, updateData);
+        
+        // TODO: Send customer notification email about shipping update
+        // await sendShippingUpdateEmail(order, updateData);
+        
+    } catch (error) {
+        console.error('Error handling shipping update:', error);
+        // Don't throw error to avoid webhook retry loops
     }
 }
 
