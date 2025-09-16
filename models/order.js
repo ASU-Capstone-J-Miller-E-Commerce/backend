@@ -4,12 +4,11 @@ const { v4: uuidv4 } = require("uuid");
 const orderSchema = new mongoose.Schema({
     orderId: {
         type: String,
-        default: uuidv4,
+        default: () => `JM-${uuidv4()}`,
         unique: true
     },
     customer: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "user",
+        type: String,
         required: true,
     },
     orderStatus: {
@@ -43,12 +42,21 @@ const orderSchema = new mongoose.Schema({
     expectedDelivery: {
         type: Date,
     },
-    orderItems: [
-        {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "product",
-        },
-    ],
+    trackingNumber: {
+        type: String,
+    },
+    shippingCarrier: {
+        type: String,
+    },
+    orderItems: {
+        cueGuids: [{
+            type: String
+        }],
+        accessoryGuids: [{
+            guid: String,
+            quantity: Number
+        }]
+    },
     createdAt: {
         type: Date,
         default: Date.now,

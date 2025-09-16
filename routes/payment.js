@@ -2,64 +2,99 @@ const stripe = require('stripe')(process.env.STRIPE_KEY);
 const express = require('express')
 const router = express.Router()
 const Cue = require('../models/cue')
-const { makeError, makeResponse } = require('../response/makeResponse')
+const Accessory = require('../models/accessory')
+const { makeError, makeResponse, makeData } = require('../response/makeResponse')
+const { authUser } = require('./authorization')
 
 
-router.post('/create-checkout-session', getCue, async (req, res) => {
+router.post('/create-checkout-session', authUser, getCartItems, async (req, res) => {
 
     try
     {
         var session;
-        var cue_price_ids = [];
+        var line_items = [];
 
+        // Process cues (quantity is always 1)
         for (const cue of res.cues) {
-          const price =  await stripe.products.retrieve(cue.stripe_id, {
+          if (!cue.stripe_id) {
+            console.log(`Cue ${cue.guid} has no stripe_id`);
+            continue;
+          }
+
+          const price = await stripe.products.retrieve(cue.stripe_id, {
             expand: ['default_price'],
           });
 
-          cue_price_ids.push(price.default_price.id);
+          line_items.push({
+            price: price.default_price.id,
+            quantity: 1 // Cues are always quantity 1
+          });
         }
 
-        const qtyByPrice = new Map();
-        for (const cue_price of cue_price_ids) {
-          if (!cue_price) continue; // or throw if required
-          qtyByPrice.set(cue_price, (qtyByPrice.get(cue_price) || 0) + 1);
-        }
-        const line_items_ = [...qtyByPrice.entries()].map(([price, quantity]) => ({ price, quantity }));
+        // Process accessories (with their specified quantities)
+        for (const accessoryItem of res.accessories) {
+          if (!accessoryItem.accessory.stripe_id) {
+            console.log(`Accessory ${accessoryItem.accessory.guid} has no stripe_id`);
+            continue;
+          }
 
-        if (line_items_.length === 0) {
-          return res.status(400).json(makeError(['No purchasable items.']));
+          const price = await stripe.products.retrieve(accessoryItem.accessory.stripe_id, {
+            expand: ['default_price'],
+          });
+
+          line_items.push({
+            price: price.default_price.id,
+            quantity: accessoryItem.quantity
+          });
         }
 
-        if(req.body.shipping)
-        {
-            session = await stripe.checkout.sessions.create({
-                customer_email: req.body.email,
-                submit_type: 'pay',
-                billing_address_collection: 'auto',
-                shipping_address_collection: {
-                  allowed_countries: ['US', 'CA'],
-                },
-                line_items: line_items_,
-                mode: 'payment',
-                success_url: `${process.env.ORIGIN_URL}/success.html`,
-                cancel_url: `${process.env.ORIGIN_URL}/cancel.html`,
-              });
+        if (line_items.length === 0) {
+          return res.status(400).json(makeError(['No purchasable items with valid Stripe products.']));
         }
-        else
-        {
-            session = await stripe.checkout.sessions.create({
-                customer_email: req.body.email,
-                submit_type: 'pay',
-                line_items: line_items_,
-                mode: 'payment',
-                success_url: `${process.env.ORIGIN_URL}/success.html`,
-                cancel_url: `${process.env.ORIGIN_URL}/cancel.html`,
-              });
-        }
+
+        // Get shipping options for the country
+        const shippingOptions = await getShippingOptionsForCountry(req.body.shippingCountry, req.body.cartTotal);
+
+        session = await stripe.checkout.sessions.create({
+            customer_email: req.body.email,
+            submit_type: 'pay',
+            billing_address_collection: 'required', // Still collect billing for payment
+            shipping_address_collection: {
+              allowed_countries: [req.body.shippingCountry], // Only allow the selected country
+            },
+            shipping_options: shippingOptions,
+            line_items: line_items,
+            mode: 'payment',
+            success_url: `${process.env.ORIGIN_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${process.env.ORIGIN_URL}/checkout/cancel`,
+            
+            // Additional customization options
+            locale: 'auto', // Auto-detect customer's language
+            payment_method_types: ['card'], // Accept only cards
+            allow_promotion_codes: true, // Enable discount codes
+            
+            // Metadata for tracking
+            metadata: {
+              order_type: 'ecommerce',
+              source: 'website_cart',
+              shipping_country: req.body.shippingCountry,
+              cue_guids: JSON.stringify(res.cues.map(cue => cue.guid)),
+              accessory_items: JSON.stringify(res.accessories.map(acc => ({ guid: acc.accessory.guid, quantity: acc.quantity })))
+            },
+            
+            // Phone number collection
+            phone_number_collection: {
+              enabled: true
+            },
+            
+            // Tax calculation (if configured in Stripe)
+            automatic_tax: {
+              enabled: true // Set to true if you have tax calculation set up
+            }
+          });
         
-        res.set("Location", session.url);
-        return res.status(303).json(makeResponse('success', session.url, ['Checkout Link Created.'], false));
+        // Return the URL in the response body for frontend to handle redirect
+        return res.status(200).json(makeResponse('success', session.url, ['Checkout Link Created.'], false));
     }
     catch(err)
     {
@@ -69,23 +104,422 @@ router.post('/create-checkout-session', getCue, async (req, res) => {
   
 });
 
-async function getCue(req, res, next) {
-    let cues
+// Verify payment session and get order details
+router.get('/verify-session/:session_id', authUser, async (req, res) => {
     try {
-        cues = await Cue.find({
-          _id: { $in: req.body.ids }
-        })
-        if(cues === null){
-            return res.status(404).json(makeError(['Cannot find cue(s)']))
+        const session = await stripe.checkout.sessions.retrieve(req.params.session_id, {
+            expand: ['line_items', 'line_items.data.price.product']
+        });
+
+        if (session.payment_status !== 'paid') {
+            return res.status(400).json(makeError(['Payment not completed']));
         }
 
+        // Get the payment intent to get more details
+        const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent);
+
+        // Extract order information from metadata
+        const cueGuids = session.metadata.cue_guids ? JSON.parse(session.metadata.cue_guids) : [];
+        const accessoryItems = session.metadata.accessory_items ? JSON.parse(session.metadata.accessory_items) : [];
+
+        const orderDetails = {
+            sessionId: session.id,
+            paymentIntentId: paymentIntent.id,
+            status: 'paid',
+            amount: session.amount_total / 100, // Convert from cents
+            currency: session.currency,
+            customer: {
+                email: session.customer_details.email,
+                name: session.customer_details.name,
+                phone: session.customer_details.phone
+            },
+            shipping: session.shipping_details,
+            billing: session.customer_details.address,
+            items: {
+                cues: cueGuids,
+                accessories: accessoryItems
+            },
+            createdAt: new Date(session.created * 1000),
+            metadata: session.metadata
+        };
+
+        const enhancedOrderDetails = await processCompletedOrder(orderDetails);
+
+        return res.status(200).json(makeResponse('success', enhancedOrderDetails, ['Payment verified successfully'], false));
+    } catch (error) {
+        return res.status(500).json(makeError(['Failed to verify payment session']));
+    }
+});
+
+async function getCartItems(req, res, next) {
+    try {
+        // Get cue GUIDs and accessory items from request
+        const cueGuids = req.body.cueGuids || [];
+        const accessoryItems = req.body.accessoryItems || []; // Array of {guid, quantity}
+
+        // Fetch cues
+        const cues = await Cue.find({
+          guid: { $in: cueGuids }
+        });
+
+        // Fetch accessories and combine with quantities
+        const accessoryGuids = accessoryItems.map(item => item.guid);
+        const accessories = await Accessory.find({
+          guid: { $in: accessoryGuids }
+        });
+
+        // Combine accessories with their quantities
+        const accessoriesWithQuantity = accessories.map(accessory => {
+          const item = accessoryItems.find(item => item.guid === accessory.guid);
+          return {
+            accessory: accessory,
+            quantity: item ? item.quantity : 1
+          };
+        });
+
+        if (cues.length === 0 && accessoriesWithQuantity.length === 0) {
+            return res.status(404).json(makeError(['No items found']));
+        }
+
+        res.cues = cues;
+        res.accessories = accessoriesWithQuantity;
+        next();
     } catch (err) {
-        console.log(err)
-        return res.status(500).json(makeError(["internal server error, please try again later or contact support"]))
+        console.log(err);
+        return res.status(500).json(makeError(["internal server error, please try again later or contact support"]));
+    }
+}
+
+async function getShippingOptionsForCountry(countryCode, cartTotal) {
+    try {
+        // Get all shipping rates from Stripe
+        const shippingRates = await stripe.shippingRates.list({
+            limit: 100, // Adjust as needed
+            active: true
+        });
+
+        // Filter shipping rates by country and threshold
+        const applicableRates = shippingRates.data.filter(rate => {
+            // Check if rate has metadata with countries and threshold
+            if (!rate.metadata || !rate.metadata.countries) {
+                return false;
+            }
+
+            // Check if the country is in the space-separated list
+            const supportedCountries = rate.metadata.countries.split(' ');
+            if (!supportedCountries.includes(countryCode)) {
+                return false;
+            }
+
+            // Check threshold if it exists
+            if (rate.metadata.threshold) {
+                const threshold = parseFloat(rate.metadata.threshold);
+                if (cartTotal < threshold) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+
+        if (applicableRates.length === 0) {
+            // Return a default error or empty array if no shipping available
+            return [];
+        }
+
+        // Sort by threshold (highest first) and pick the first one
+        const sortedRates = applicableRates.sort((a, b) => {
+            const thresholdA = parseFloat(a.metadata.threshold || 0);
+            const thresholdB = parseFloat(b.metadata.threshold || 0);
+            return thresholdB - thresholdA; // Descending order
+        });
+
+        // Return only the highest threshold rate that applies
+        const selectedRate = sortedRates[0];
+        
+        return [
+            {
+                shipping_rate: selectedRate.id
+            }
+        ];
+
+    } catch (error) {
+        console.error('Error fetching shipping rates:', error);
+        return [];
+    }
+}
+
+// Stripe webhook endpoint for handling events
+router.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    
+    let event;
+
+    try {
+        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } catch (err) {
+        console.log(`Webhook signature verification failed.`, err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    res.cues = cues
-    next()
+    // Handle the event
+    switch (event.type) {
+        case 'checkout.session.completed':
+            const session = event.data.object;
+            console.log('Payment succeeded for session:', session.id);
+            
+            // Get full session details with line items
+            const fullSession = await stripe.checkout.sessions.retrieve(session.id, {
+                expand: ['line_items', 'line_items.data.price.product']
+            });
+
+            // Process the order
+            await handleSuccessfulPayment(fullSession);
+            break;
+        
+        case 'payment_intent.succeeded':
+            const paymentIntent = event.data.object;
+            console.log('PaymentIntent succeeded:', paymentIntent.id);
+            break;
+        
+        // Shipping/fulfillment events from Parcel Craft or other shipping providers
+        case 'order.updated':
+        case 'shipment.created':
+        case 'shipment.updated':
+        case 'tracking.updated':
+            await handleShippingUpdate(event);
+            break;
+        
+        default:
+            console.log(`Unhandled event type ${event.type}`);
+    }
+
+    res.json({received: true});
+});
+
+async function handleSuccessfulPayment(session) {
+    try {
+        // Extract order information from metadata
+        const cueGuids = session.metadata.cue_guids ? JSON.parse(session.metadata.cue_guids) : [];
+        const accessoryItems = session.metadata.accessory_items ? JSON.parse(session.metadata.accessory_items) : [];
+
+        const orderDetails = {
+            sessionId: session.id,
+            status: 'paid',
+            amount: session.amount_total / 100,
+            currency: session.currency,
+            customer: {
+                email: session.customer_details.email,
+                name: session.customer_details.name,
+                phone: session.customer_details.phone
+            },
+            shipping: session.shipping_details,
+            billing: session.customer_details.address,
+            items: {
+                cues: cueGuids,
+                accessories: accessoryItems
+            },
+            createdAt: new Date(session.created * 1000),
+            metadata: session.metadata
+        };
+
+        await processCompletedOrder(orderDetails);
+        
+        console.log('Order processed successfully for session:', session.id);
+    } catch (error) {
+        console.error('Error processing successful payment:', error);
+        // Consider implementing retry logic or dead letter queue here
+    }
+}
+
+async function processCompletedOrder(orderDetails) {
+    try {
+        // 1. Create order record in database
+        const Order = require('../models/order');
+        const User = require('../models/user');
+        
+        // Verify customer exists (for validation)
+        const customer = await User.findOne({ email: orderDetails.customer.email });
+        if (!customer) {
+            throw new Error(`Customer not found with email: ${orderDetails.customer.email}`);
+        }
+
+        // Prepare order items with GUIDs
+        const orderItems = {
+            cueGuids: [],
+            accessoryGuids: []
+        };
+        
+        // Add cue GUIDs to order items
+        if (orderDetails.items.cues && orderDetails.items.cues.length > 0) {
+            orderItems.cueGuids = orderDetails.items.cues;
+        }
+        
+        // Add accessory GUIDs with quantities to order items
+        if (orderDetails.items.accessories && orderDetails.items.accessories.length > 0) {
+            orderItems.accessoryGuids = orderDetails.items.accessories.map(item => ({
+                guid: item.guid,
+                quantity: item.quantity
+            }));
+        }
+
+        // Create order document
+        const order = await Order.create({
+            // Let mongoose generate the guid and orderId automatically
+            customer: orderDetails.customer.email, // Store email directly
+            orderStatus: 'confirmed',
+            totalAmount: orderDetails.amount,
+            currency: orderDetails.currency.toUpperCase(),
+            paymentStatus: 'paid',
+            paymentMethod: 'Stripe',
+            shippingAddress: orderDetails.shipping ? {
+                name: orderDetails.shipping.name,
+                address: orderDetails.shipping.address,
+                phone: orderDetails.customer.phone
+            } : {},
+            billingAddress: orderDetails.billing || {},
+            orderItems: orderItems,
+            createdAt: orderDetails.createdAt,
+            updatedAt: new Date()
+        });
+
+        console.log('Order created successfully:', order.orderId);
+        
+        // 2. Update inventory - mark cues as sold
+        if (orderDetails.items.cues && orderDetails.items.cues.length > 0) {
+            await Cue.updateMany(
+                { guid: { $in: orderDetails.items.cues } },
+                { status: 'Sold' }
+            );
+        }
+
+        // 3. Clear user's cart after successful purchase
+        await User.updateOne(
+            { email: orderDetails.customer.email },
+            { $set: { cart: [] } }
+        );
+
+        // 4. Send confirmation email
+        // await sendOrderConfirmationEmail(orderDetails);
+
+        // 5. Log analytics
+        console.log('Order analytics:', {
+            orderId: order.orderId,
+            amount: orderDetails.amount,
+            itemCount: (orderDetails.items.cues?.length || 0) + (orderDetails.items.accessories?.length || 0),
+            country: orderDetails.shipping?.address?.country
+        });
+
+        // Return enhanced order details with the generated orderId
+        return {
+            ...orderDetails,
+            orderId: order.orderId
+        };
+    } catch (error) {
+        throw error;
+    }
+}
+
+// Handle shipping updates from Parcel Craft via Stripe webhooks
+async function handleShippingUpdate(event) {
+    try {
+        const Order = require('../models/order');
+        const eventData = event.data.object;
+        
+        console.log('Processing shipping update:', event.type, eventData);
+        
+        // Extract order identification (this may vary based on how Parcel Craft sends the data)
+        let orderId = null;
+        
+        // Check various possible locations for order ID
+        if (eventData.metadata && eventData.metadata.order_id) {
+            orderId = eventData.metadata.order_id;
+        } else if (eventData.order_id) {
+            orderId = eventData.order_id;
+        } else if (eventData.reference) {
+            orderId = eventData.reference;
+        }
+        
+        if (!orderId) {
+            console.log('No order ID found in shipping update event');
+            return;
+        }
+        
+        // Find the order
+        const order = await Order.findOne({ orderId: orderId });
+        if (!order) {
+            console.log(`Order not found for ID: ${orderId}`);
+            return;
+        }
+        
+        // Update order based on event type
+        let updateData = { updatedAt: new Date() };
+        
+        switch (event.type) {
+            case 'shipment.created':
+                updateData.orderStatus = 'shipped';
+                if (eventData.tracking_number) {
+                    updateData.trackingNumber = eventData.tracking_number;
+                }
+                if (eventData.carrier) {
+                    updateData.shippingCarrier = eventData.carrier;
+                }
+                if (eventData.estimated_delivery) {
+                    updateData.expectedDelivery = new Date(eventData.estimated_delivery);
+                }
+                break;
+                
+            case 'shipment.updated':
+            case 'tracking.updated':
+                if (eventData.status) {
+                    // Map shipping statuses to our order statuses
+                    switch (eventData.status.toLowerCase()) {
+                        case 'in_transit':
+                        case 'in transit':
+                            updateData.orderStatus = 'shipped';
+                            break;
+                        case 'delivered':
+                            updateData.orderStatus = 'delivered';
+                            break;
+                        case 'exception':
+                        case 'failed_attempt':
+                            updateData.orderStatus = 'delivery_exception';
+                            break;
+                        default:
+                            updateData.orderStatus = 'shipped';
+                    }
+                }
+                
+                if (eventData.tracking_number) {
+                    updateData.trackingNumber = eventData.tracking_number;
+                }
+                
+                if (eventData.estimated_delivery) {
+                    updateData.expectedDelivery = new Date(eventData.estimated_delivery);
+                }
+                break;
+                
+            case 'order.updated':
+                // Handle general order updates
+                if (eventData.status) {
+                    updateData.orderStatus = eventData.status;
+                }
+                break;
+        }
+        
+        // Update the order
+        await Order.findByIdAndUpdate(order._id, updateData);
+        
+        console.log(`Order ${orderId} updated successfully:`, updateData);
+        
+        // TODO: Send customer notification email about shipping update
+        // await sendShippingUpdateEmail(order, updateData);
+        
+    } catch (error) {
+        console.error('Error handling shipping update:', error);
+        // Don't throw error to avoid webhook retry loops
+    }
 }
 
 module.exports = router;

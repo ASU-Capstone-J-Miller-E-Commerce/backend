@@ -3,14 +3,18 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const validator = require('validator')
 const user = require('../models/user')
+const Order = require('../models/order')
+const Cue = require('../models/cue')
+const Accessory = require('../models/accessory')
 const router = express.Router()
 const { sendEmail } = require('../sendMail')
 const { makeError, makeResponse } = require('../response/makeResponse')
+const { authUser } = require('./authorization')
 require('dotenv').config()
 const jwtSecret = process.env.JWT_SECRET_KEY
 
 
-router.put('/update-name/:email', async (req, res) =>
+router.put('/update-name/:email', authUser, async (req, res) =>
 {
     try
     {
@@ -52,7 +56,7 @@ router.put('/update-name/:email', async (req, res) =>
 });
 
 
-router.put('/userChangePassword', async (req, res) =>
+router.put('/userChangePassword', authUser, async (req, res) =>
     {
         try
         {
@@ -93,5 +97,69 @@ router.put('/userChangePassword', async (req, res) =>
             res.status(400).json(makeError(['Something went wrong.']));
         }
     });
+
+// Get user orders with dereferenced item details
+router.get('/orders', authUser, async (req, res) => {
+    try {
+        const userEmail = req.userId;
+        
+        // Find all orders for this user
+        const orders = await Order.find({ customer: userEmail })
+            .sort({ createdAt: -1 }) // Most recent first
+            .lean();
+
+        if (!orders || orders.length === 0) {
+            return res.status(200).json(makeResponse('success', [], ['No orders found'], false));
+        }
+
+        // Dereference order items for each order
+        const ordersWithDetails = await Promise.all(
+            orders.map(async (order) => {
+                const orderWithDetails = { ...order };
+                
+                // Dereference cues
+                if (order.orderItems.cueGuids && order.orderItems.cueGuids.length > 0) {
+                    const cues = await Cue.find({ 
+                        guid: { $in: order.orderItems.cueGuids } 
+                    }).select('guid cueNumber name price imageUrls -_id').lean();
+                    
+                    orderWithDetails.orderItems.cueDetails = cues;
+                }
+
+                // Dereference accessories
+                if (order.orderItems.accessoryGuids && order.orderItems.accessoryGuids.length > 0) {
+                    const accessoryGuids = order.orderItems.accessoryGuids.map(item => item.guid);
+                    const accessories = await Accessory.find({ 
+                        guid: { $in: accessoryGuids } 
+                    }).select('guid accessoryNumber name price imageUrls -_id').lean();
+                    
+                    // Combine accessories with their quantities
+                    orderWithDetails.orderItems.accessoryDetails = accessories.map(accessory => {
+                        const orderItem = order.orderItems.accessoryGuids.find(item => item.guid === accessory.guid);
+                        return {
+                            ...accessory,
+                            quantity: orderItem ? orderItem.quantity : 1
+                        };
+                    });
+                }
+
+                // Calculate total item count
+                const cueCount = order.orderItems.cueGuids ? order.orderItems.cueGuids.length : 0;
+                const accessoryCount = order.orderItems.accessoryGuids ? 
+                    order.orderItems.accessoryGuids.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
+                
+                orderWithDetails.totalItemCount = cueCount + accessoryCount;
+
+                return orderWithDetails;
+            })
+        );
+
+        return res.status(200).json(makeResponse('success', ordersWithDetails, ['Orders retrieved successfully'], false));
+
+    } catch (ex) {
+        console.error(ex);
+        res.status(500).json(makeError(['Something went wrong while fetching orders.']));
+    }
+});
     
 module.exports = router;
