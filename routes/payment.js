@@ -54,15 +54,15 @@ router.post('/create-checkout-session', authUser, getCartItems, async (req, res)
 
         // Get shipping options for the country
         const shippingOptions = await getShippingOptionsForCountry(req.body.shippingCountry, req.body.cartTotal);
-
-        session = await stripe.checkout.sessions.create({
+        
+        // Debug: Log shipping options
+        console.log('Shipping options for', req.body.shippingCountry, ':', shippingOptions);
+        
+        // If no shipping options are available, don't require shipping address
+        const sessionConfig = {
             customer_email: req.body.email,
             submit_type: 'pay',
             billing_address_collection: 'required', // Still collect billing for payment
-            shipping_address_collection: {
-              allowed_countries: [req.body.shippingCountry], // Only allow the selected country
-            },
-            shipping_options: shippingOptions,
             line_items: line_items,
             mode: 'payment',
             success_url: `${process.env.ORIGIN_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
@@ -91,7 +91,19 @@ router.post('/create-checkout-session', authUser, getCartItems, async (req, res)
             automatic_tax: {
               enabled: true // Set to true if you have tax calculation set up
             }
-          });
+        };
+        
+        // Only add shipping configuration if shipping options are available
+        if (shippingOptions && shippingOptions.length > 0) {
+            sessionConfig.shipping_address_collection = {
+                allowed_countries: [req.body.shippingCountry]
+            };
+            sessionConfig.shipping_options = shippingOptions;
+        } else {
+            console.warn('No shipping options available for', req.body.shippingCountry);
+        }
+
+        session = await stripe.checkout.sessions.create(sessionConfig);
         
         // Return the URL in the response body for frontend to handle redirect
         return res.status(200).json(makeResponse('success', session.url, ['Checkout Link Created.'], false));
@@ -108,7 +120,7 @@ router.post('/create-checkout-session', authUser, getCartItems, async (req, res)
 router.get('/verify-session/:session_id', authUser, async (req, res) => {
     try {
         const session = await stripe.checkout.sessions.retrieve(req.params.session_id, {
-            expand: ['line_items', 'line_items.data.price.product']
+            expand: ['line_items', 'line_items.data.price.product', 'shipping_cost', 'total_details']
         });
 
         if (session.payment_status !== 'paid') {
@@ -122,6 +134,13 @@ router.get('/verify-session/:session_id', authUser, async (req, res) => {
         const cueGuids = session.metadata.cue_guids ? JSON.parse(session.metadata.cue_guids) : [];
         const accessoryItems = session.metadata.accessory_items ? JSON.parse(session.metadata.accessory_items) : [];
 
+        // Extract shipping details from the correct location
+        let shippingDetails = session.shipping_details;
+        if (!shippingDetails && session.collected_information?.shipping_details) {
+            shippingDetails = session.collected_information.shipping_details;
+            console.log('Using shipping details from collected_information');
+        }
+
         const orderDetails = {
             sessionId: session.id,
             paymentIntentId: paymentIntent.id,
@@ -133,7 +152,7 @@ router.get('/verify-session/:session_id', authUser, async (req, res) => {
                 name: session.customer_details.name,
                 phone: session.customer_details.phone
             },
-            shipping: session.shipping_details,
+            shipping: shippingDetails,
             billing: session.customer_details.address,
             items: {
                 cues: cueGuids,
@@ -271,7 +290,7 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
             
             // Get full session details with line items
             const fullSession = await stripe.checkout.sessions.retrieve(session.id, {
-                expand: ['line_items', 'line_items.data.price.product']
+                expand: ['line_items', 'line_items.data.price.product', 'shipping_cost', 'total_details']
             });
 
             // Process the order
@@ -304,6 +323,12 @@ async function handleSuccessfulPayment(session) {
         const cueGuids = session.metadata.cue_guids ? JSON.parse(session.metadata.cue_guids) : [];
         const accessoryItems = session.metadata.accessory_items ? JSON.parse(session.metadata.accessory_items) : [];
 
+        // Extract shipping details from the correct location
+        let shippingDetails = session.shipping_details;
+        if (!shippingDetails && session.collected_information?.shipping_details) {
+            shippingDetails = session.collected_information.shipping_details;
+        }
+
         const orderDetails = {
             sessionId: session.id,
             status: 'paid',
@@ -314,7 +339,7 @@ async function handleSuccessfulPayment(session) {
                 name: session.customer_details.name,
                 phone: session.customer_details.phone
             },
-            shipping: session.shipping_details,
+            shipping: shippingDetails,
             billing: session.customer_details.address,
             items: {
                 cues: cueGuids,
