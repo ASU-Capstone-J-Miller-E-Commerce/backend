@@ -90,6 +90,10 @@ router.post('/create-checkout-session', authUser, getCartItems, async (req, res)
             // Tax calculation (if configured in Stripe)
             automatic_tax: {
               enabled: true // Set to true if you have tax calculation set up
+            },
+
+            invoice_creation: {
+                enabled: true
             }
         };
         
@@ -410,6 +414,24 @@ async function processCompletedOrder(orderDetails) {
         });
 
         console.log('Order created successfully:', order.orderId);
+        
+        // Update invoice metadata with the actual order ID
+        try {
+            // Get the checkout session to find the invoice
+            const checkoutSession = await stripe.checkout.sessions.retrieve(orderDetails.sessionId);
+            if (checkoutSession.invoice) {
+                await stripe.invoices.update(checkoutSession.invoice, {
+                    metadata: {
+                        orderId: order.orderId,
+                        ship_status: 'unshipped',
+                    }
+                });
+                console.log('Invoice metadata updated with order ID:', order.orderId);
+            }
+        } catch (invoiceError) {
+            console.error('Error updating invoice metadata:', invoiceError);
+            // Don't throw error as the order was successfully created
+        }
         
         // 2. Update inventory - mark cues as sold
         if (orderDetails.items.cues && orderDetails.items.cues.length > 0) {
