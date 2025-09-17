@@ -161,5 +161,54 @@ router.get('/orders', authUser, async (req, res) => {
         res.status(500).json(makeError(['Something went wrong while fetching orders.']));
     }
 });
+
+// Get a single user order by orderId with dereferenced item details
+router.get('/orders/:orderId', authUser, async (req, res) => {
+    try {
+        const userEmail = req.userId;
+        const { orderId } = req.params;
+
+        // Find the order for this user
+        const order = await Order.findOne({ customer: userEmail, orderId }).lean();
+
+        if (!order) {
+            return res.status(404).json(makeError(['Order not found'], false));
+        }
+
+        // Dereference cues
+        if (order.orderItems.cueGuids && order.orderItems.cueGuids.length > 0) {
+            const cues = await Cue.find({
+                guid: { $in: order.orderItems.cueGuids }
+            }).select('guid cueNumber name price imageUrls -_id').lean();
+            order.orderItems.cueDetails = cues;
+        }
+
+        // Dereference accessories
+        if (order.orderItems.accessoryGuids && order.orderItems.accessoryGuids.length > 0) {
+            const accessoryGuids = order.orderItems.accessoryGuids.map(item => item.guid);
+            const accessories = await Accessory.find({
+                guid: { $in: accessoryGuids }
+            }).select('guid accessoryNumber name price imageUrls -_id').lean();
+            order.orderItems.accessoryDetails = accessories.map(accessory => {
+                const orderItem = order.orderItems.accessoryGuids.find(item => item.guid === accessory.guid);
+                return {
+                    ...accessory,
+                    quantity: orderItem ? orderItem.quantity : 1
+                };
+            });
+        }
+
+        // Calculate total item count
+        const cueCount = order.orderItems.cueGuids ? order.orderItems.cueGuids.length : 0;
+        const accessoryCount = order.orderItems.accessoryGuids ?
+            order.orderItems.accessoryGuids.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
+        order.totalItemCount = cueCount + accessoryCount;
+
+        return res.status(200).json(makeResponse('success', order, ['Order retrieved successfully'], false));
+    } catch (ex) {
+        console.error(ex);
+        res.status(500).json(makeError(['Something went wrong while fetching the order.']));
+    }
+});
     
 module.exports = router;
