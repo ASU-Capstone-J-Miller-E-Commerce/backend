@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema(
             base32: String,
             otpauth_URL: String
         },
-        emailNotos: {type: Boolean, required: True },
+        emailNotos: {type: Boolean, required: true },
         cart: [{
             itemGuid: { type: String, required: true },
             itemType: { type: String, enum: ['cue', 'accessory'], required: true },
