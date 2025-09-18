@@ -13,11 +13,38 @@ router.use(function(req, res, next) {
 
 //get all
 router.get('/', authAdmin, async (req, res, next) => {
+    const Cue = require('../../models/cue');
+    const Accessory = require('../../models/accessory');
     try {
-        const orders = await Order.find()
-        res.status(200).json(makeResponse('success', orders, ['fetched all orders from database'], false))
+        const orders = await Order.find();
+        // For each order, dereference cue and accessory details (name, price, quantity only)
+        const ordersWithDetails = await Promise.all(orders.map(async (order) => {
+            // Deref cues
+            let cues = [];
+            if (order.orderItems && Array.isArray(order.orderItems.cueGuids)) {
+                cues = await Cue.find({ guid: { $in: order.orderItems.cueGuids } }, { name: 1, price: 1, guid: 1 });
+                cues = cues.map(cue => ({ guid: cue.guid, name: cue.name, price: cue.price }));
+            }
+            // Deref accessories
+            let accessories = [];
+            if (order.orderItems && Array.isArray(order.orderItems.accessoryGuids)) {
+                const accessoryGuids = order.orderItems.accessoryGuids.map(a => a.guid);
+                const accessoryDetails = await Accessory.find({ guid: { $in: accessoryGuids } }, { name: 1, price: 1, guid: 1 });
+                accessories = order.orderItems.accessoryGuids.map(item => {
+                    const found = accessoryDetails.find(a => a.guid === item.guid);
+                    return found ? { guid: item.guid, name: found.name, price: found.price, quantity: item.quantity } : { guid: item.guid, quantity: item.quantity };
+                });
+            }
+            // Return order with dereferenced items
+            return {
+                ...order.toObject(),
+                cueDetails: cues,
+                accessoryDetails: accessories
+            };
+        }));
+        res.status(200).json(makeResponse('success', ordersWithDetails, ['fetched all orders from database with item details'], false));
     } catch (err) {
-        res.status(500).json(makeError([err.message]))
+        res.status(500).json(makeError([err.message]));
     }
 })
 
