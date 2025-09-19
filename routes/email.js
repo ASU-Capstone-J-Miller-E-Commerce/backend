@@ -2,10 +2,13 @@ const express = require('express')
 const nodemailer = require("nodemailer");
 const { makeData } = require('../response/makeResponse')
 const { makeError, makeResponse } = require('../response/makeResponse')
-const user = require('../models/user')
+const User = require('../models/user')
+const Order = require('../models/order')
 const router = express.Router()
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto');
+const multer = require("multer");
+const upload = multer({ storage: multer.memoryStorage() });
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -36,26 +39,24 @@ async function sendEmail(to, subject, text, html) {
 }
 
 //Contact Us Route
-router.post("/contactus", async (req, res) => {
-  const { subject, message, attachments  } = req.body;
+router.post("/contactus", upload.array("attachments"), async (req, res) => {
+  const { subject, message } = req.body;
+  const files = req.files; 
 
   if (!subject || !message) {
     return res.status(400).json(makeError(['Please enter all fields.']));
   }
 
   const mailOptions = {
-    from: `"Admin" <${process.env.EMAIL_USER}>`,
-    to: 'jmillercustomcuestest@gmail.com',
-    subject,
-    //text: message,
-    html: `<p>${message}</p>`,
-    attachments: attachments?.map(file => ({
-        filename: file.filename,
-        path: file.path,
-        content: file.content,
-        encoding: file.encoding || undefined
-    }))
-  };
+      from: `"Admin" <${process.env.EMAIL_USER}>`,
+      to: 'jmillercustomcuestest@gmail.com',
+      subject,
+      html: `<p>${message}</p>`,
+      attachments: files?.map(file => ({
+        filename: file.originalname,
+        content: file.buffer
+      }))
+    };
 
   try {
     const info = await transporter.sendMail(mailOptions);
@@ -83,7 +84,7 @@ router.post("/resetPassword", async (req, res) => {
         }
 
         //Generate new password, encrypt and save.
-        const resetToken = bcrypt.randomBytes(32).toString("hex");
+        const resetToken = crypto.randomBytes(8).toString("hex");
         const editedUser = await User.findOne({email: email});
         const passHash = await bcrypt.hash(resetToken, 10);
         editedUser.password = passHash;
@@ -98,26 +99,24 @@ router.post("/resetPassword", async (req, res) => {
           html: `<p>This is an automated message. Do not reply to this email.<br>
           Your password reset token is: ${resetToken}. Use this to login to your account.</p>`
         };
-    
+        const info = await transporter.sendMail(mailOptions);
+        console.log("Email sent:", info.messageId);
+        return res.status(201).json(makeResponse('success', false, ['Message Sent Successfully.'], false));
           
         }catch(ex){
             console.error(ex);
             res.status(400).json(makeError(['Something went wrong.']));
         }
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Email sent:", info.messageId);
-    return res.status(201).json(makeResponse('success', false, ['Message Sent Successfully.'], false));
-  } catch (error) {
-    console.error("Error sending email:", error);
-    return res.status(500).json(makeError(['Failed to send message.']));
-  }
 });
 
 //Email notifications. Contents to be determined. ADMIN ONLY
-router.post("/notification", async (req, res) => {
+router.post("/notification", upload.array("attachments"), async (req, res) => {
   const { subject, message } = req.body;
+  const files = req.files; 
+
+  if (!subject || !message) {
+    return res.status(400).json(makeError(['Please enter all fields.']));
+  }
 
     //Search for user in database.
     try{
@@ -135,7 +134,11 @@ router.post("/notification", async (req, res) => {
                 subject,
                 //text: message,
                 html: `<p>This is an automated message. Do not reply to this email.<br>
-                ${message}</p>`
+                ${message}</p>`,
+                attachments: files?.map(file => ({
+                    filename: file.originalname,
+                    content: file.buffer
+                  }))
               };
               try {
                   const info = await transporter.sendMail(mailOptions);
@@ -155,5 +158,81 @@ router.post("/notification", async (req, res) => {
         }
 
 });
+
+//Email notifications. Contents to be determined. ADMIN ONLY
+router.post("/announcement", upload.array("attachments"), async (req, res) => {
+  const { subject, message } = req.body;
+  const files = req.files; 
+
+  if (!subject || !message) {
+    return res.status(400).json(makeError(['Please enter all fields.']));
+  }
+
+    //Search for user in database.
+    try{
+        //Find each user in the database by email.
+        const users = await User.find({});
+
+        // if user has email notos turned on, send them a notification.
+        for ( const user of users )
+        {
+          if(user.emailNotos === true)
+          {
+            const mailOptions = {
+                from: `"Admin" <${process.env.EMAIL_USER}>`,
+                to: user.email,
+                subject,
+                //text: message,
+                html: `<p>This is an automated message. Do not reply to this email.<br>
+                ${message}</p>`,
+                attachments: files?.map(file => ({
+                    filename: file.originalname,
+                    content: file.buffer
+                  }))
+              };
+              try {
+                  const info = await transporter.sendMail(mailOptions);
+                  console.log("Email sent:", info.messageId);
+                  return res.status(201).json(makeResponse('success', false, ['Message Sent Successfully.'], false));
+              } 
+              catch (error) {
+                console.error("Error sending email:", error);
+                return res.status(500).json(makeError(['Failed to send message.']));
+              }
+          }
+        }
+          
+        }catch(ex){
+            console.error(ex);
+            res.status(400).json(makeError(['Something went wrong.']));
+        }
+
+});
+
+//Order Confirmation Email. Contents to be determined. 
+router.post("/orderconfirm", async (req, res) => {
+  const { email , userOrder } = req.body;
+
+    try{
+
+      const mailOptions = {
+                from: `"Admin" <${process.env.EMAIL_USER}>`,
+                to: email,
+                subject,
+                //text: message,
+                html: `<p>This is an automated message. Do not reply to this email.<br>
+                ${message}</p>`
+              };
+        
+          
+        }catch(ex){
+            console.error(ex);
+            res.status(400).json(makeError(['Something went wrong.']));
+        }
+
+});
+
+
+
 
 module.exports = router;
