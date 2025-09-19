@@ -54,15 +54,15 @@ router.post('/create-checkout-session', authUser, getCartItems, async (req, res)
 
         // Get shipping options for the country
         const shippingOptions = await getShippingOptionsForCountry(req.body.shippingCountry, req.body.cartTotal);
-
-        session = await stripe.checkout.sessions.create({
+        
+        // Debug: Log shipping options
+        console.log('Shipping options for', req.body.shippingCountry, ':', shippingOptions);
+        
+        // If no shipping options are available, don't require shipping address
+        const sessionConfig = {
             customer_email: req.body.email,
             submit_type: 'pay',
             billing_address_collection: 'required', // Still collect billing for payment
-            shipping_address_collection: {
-              allowed_countries: [req.body.shippingCountry], // Only allow the selected country
-            },
-            shipping_options: shippingOptions,
             line_items: line_items,
             mode: 'payment',
             success_url: `${process.env.ORIGIN_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
@@ -90,8 +90,24 @@ router.post('/create-checkout-session', authUser, getCartItems, async (req, res)
             // Tax calculation (if configured in Stripe)
             automatic_tax: {
               enabled: true // Set to true if you have tax calculation set up
+            },
+
+            invoice_creation: {
+                enabled: true
             }
-          });
+        };
+        
+        // Only add shipping configuration if shipping options are available
+        if (shippingOptions && shippingOptions.length > 0) {
+            sessionConfig.shipping_address_collection = {
+                allowed_countries: [req.body.shippingCountry]
+            };
+            sessionConfig.shipping_options = shippingOptions;
+        } else {
+            console.warn('No shipping options available for', req.body.shippingCountry);
+        }
+
+        session = await stripe.checkout.sessions.create(sessionConfig);
         
         // Return the URL in the response body for frontend to handle redirect
         return res.status(200).json(makeResponse('success', session.url, ['Checkout Link Created.'], false));
@@ -108,7 +124,7 @@ router.post('/create-checkout-session', authUser, getCartItems, async (req, res)
 router.get('/verify-session/:session_id', authUser, async (req, res) => {
     try {
         const session = await stripe.checkout.sessions.retrieve(req.params.session_id, {
-            expand: ['line_items', 'line_items.data.price.product']
+            expand: ['line_items', 'line_items.data.price.product', 'shipping_cost', 'total_details']
         });
 
         if (session.payment_status !== 'paid') {
@@ -122,6 +138,13 @@ router.get('/verify-session/:session_id', authUser, async (req, res) => {
         const cueGuids = session.metadata.cue_guids ? JSON.parse(session.metadata.cue_guids) : [];
         const accessoryItems = session.metadata.accessory_items ? JSON.parse(session.metadata.accessory_items) : [];
 
+        // Extract shipping details from the correct location
+        let shippingDetails = session.shipping_details;
+        if (!shippingDetails && session.collected_information?.shipping_details) {
+            shippingDetails = session.collected_information.shipping_details;
+            console.log('Using shipping details from collected_information');
+        }
+
         const orderDetails = {
             sessionId: session.id,
             paymentIntentId: paymentIntent.id,
@@ -133,7 +156,7 @@ router.get('/verify-session/:session_id', authUser, async (req, res) => {
                 name: session.customer_details.name,
                 phone: session.customer_details.phone
             },
-            shipping: session.shipping_details,
+            shipping: shippingDetails,
             billing: session.customer_details.address,
             items: {
                 cues: cueGuids,
@@ -148,6 +171,31 @@ router.get('/verify-session/:session_id', authUser, async (req, res) => {
         return res.status(200).json(makeResponse('success', enhancedOrderDetails, ['Payment verified successfully'], false));
     } catch (error) {
         return res.status(500).json(makeError(['Failed to verify payment session']));
+    }
+});
+
+// Get allowed shipping countries for checkout
+router.get('/shipping-countries', authUser, async (req, res) => {
+    try {
+        const shippingRates = await stripe.shippingRates.list({
+            active: true
+        });
+
+        // Collect all unique country codes from shipping rates metadata
+        const countrySet = new Set();
+        for (const rate of shippingRates.data) {
+            if (rate.metadata && rate.metadata.countries) {
+                const countries = rate.metadata.countries.split(' ');
+                countries.forEach(code => countrySet.add(code));
+            }
+        }
+
+        // Convert to array and sort
+        const allowedCountries = Array.from(countrySet).sort();
+        return res.status(200).json(makeResponse('success', allowedCountries, ['Allowed shipping countries fetched'], false));
+    } catch (error) {
+        console.error('Error fetching shipping countries:', error);
+        return res.status(500).json(makeError(['Failed to fetch shipping countries']));
     }
 });
 
@@ -249,89 +297,7 @@ async function getShippingOptionsForCountry(countryCode, cartTotal) {
     }
 }
 
-// Stripe webhook endpoint for handling events
-router.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
-    const sig = req.headers['stripe-signature'];
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    
-    let event;
-
-    try {
-        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-    } catch (err) {
-        console.log(`Webhook signature verification failed.`, err.message);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-
-    // Handle the event
-    switch (event.type) {
-        case 'checkout.session.completed':
-            const session = event.data.object;
-            console.log('Payment succeeded for session:', session.id);
-            
-            // Get full session details with line items
-            const fullSession = await stripe.checkout.sessions.retrieve(session.id, {
-                expand: ['line_items', 'line_items.data.price.product']
-            });
-
-            // Process the order
-            await handleSuccessfulPayment(fullSession);
-            break;
-        
-        case 'payment_intent.succeeded':
-            const paymentIntent = event.data.object;
-            console.log('PaymentIntent succeeded:', paymentIntent.id);
-            break;
-        
-        // Shipping/fulfillment events from Parcel Craft or other shipping providers
-        case 'order.updated':
-        case 'shipment.created':
-        case 'shipment.updated':
-        case 'tracking.updated':
-            await handleShippingUpdate(event);
-            break;
-        
-        default:
-            console.log(`Unhandled event type ${event.type}`);
-    }
-
-    res.json({received: true});
-});
-
-async function handleSuccessfulPayment(session) {
-    try {
-        // Extract order information from metadata
-        const cueGuids = session.metadata.cue_guids ? JSON.parse(session.metadata.cue_guids) : [];
-        const accessoryItems = session.metadata.accessory_items ? JSON.parse(session.metadata.accessory_items) : [];
-
-        const orderDetails = {
-            sessionId: session.id,
-            status: 'paid',
-            amount: session.amount_total / 100,
-            currency: session.currency,
-            customer: {
-                email: session.customer_details.email,
-                name: session.customer_details.name,
-                phone: session.customer_details.phone
-            },
-            shipping: session.shipping_details,
-            billing: session.customer_details.address,
-            items: {
-                cues: cueGuids,
-                accessories: accessoryItems
-            },
-            createdAt: new Date(session.created * 1000),
-            metadata: session.metadata
-        };
-
-        await processCompletedOrder(orderDetails);
-        
-        console.log('Order processed successfully for session:', session.id);
-    } catch (error) {
-        console.error('Error processing successful payment:', error);
-        // Consider implementing retry logic or dead letter queue here
-    }
-}
+// Note: Webhook handling has been moved to /routes/webhook.js
 
 async function processCompletedOrder(orderDetails) {
     try {
@@ -386,6 +352,24 @@ async function processCompletedOrder(orderDetails) {
 
         console.log('Order created successfully:', order.orderId);
         
+        // Update invoice metadata with the actual order ID
+        try {
+            // Get the checkout session to find the invoice
+            const checkoutSession = await stripe.checkout.sessions.retrieve(orderDetails.sessionId);
+            if (checkoutSession.invoice) {
+                await stripe.invoices.update(checkoutSession.invoice, {
+                    metadata: {
+                        orderId: order.orderId,
+                        ship_status: 'unshipped',
+                    }
+                });
+                console.log('Invoice metadata updated with order ID:', order.orderId);
+            }
+        } catch (invoiceError) {
+            console.error('Error updating invoice metadata:', invoiceError);
+            // Don't throw error as the order was successfully created
+        }
+        
         // 2. Update inventory - mark cues as sold
         if (orderDetails.items.cues && orderDetails.items.cues.length > 0) {
             await Cue.updateMany(
@@ -421,105 +405,7 @@ async function processCompletedOrder(orderDetails) {
     }
 }
 
-// Handle shipping updates from Parcel Craft via Stripe webhooks
-async function handleShippingUpdate(event) {
-    try {
-        const Order = require('../models/order');
-        const eventData = event.data.object;
-        
-        console.log('Processing shipping update:', event.type, eventData);
-        
-        // Extract order identification (this may vary based on how Parcel Craft sends the data)
-        let orderId = null;
-        
-        // Check various possible locations for order ID
-        if (eventData.metadata && eventData.metadata.order_id) {
-            orderId = eventData.metadata.order_id;
-        } else if (eventData.order_id) {
-            orderId = eventData.order_id;
-        } else if (eventData.reference) {
-            orderId = eventData.reference;
-        }
-        
-        if (!orderId) {
-            console.log('No order ID found in shipping update event');
-            return;
-        }
-        
-        // Find the order
-        const order = await Order.findOne({ orderId: orderId });
-        if (!order) {
-            console.log(`Order not found for ID: ${orderId}`);
-            return;
-        }
-        
-        // Update order based on event type
-        let updateData = { updatedAt: new Date() };
-        
-        switch (event.type) {
-            case 'shipment.created':
-                updateData.orderStatus = 'shipped';
-                if (eventData.tracking_number) {
-                    updateData.trackingNumber = eventData.tracking_number;
-                }
-                if (eventData.carrier) {
-                    updateData.shippingCarrier = eventData.carrier;
-                }
-                if (eventData.estimated_delivery) {
-                    updateData.expectedDelivery = new Date(eventData.estimated_delivery);
-                }
-                break;
-                
-            case 'shipment.updated':
-            case 'tracking.updated':
-                if (eventData.status) {
-                    // Map shipping statuses to our order statuses
-                    switch (eventData.status.toLowerCase()) {
-                        case 'in_transit':
-                        case 'in transit':
-                            updateData.orderStatus = 'shipped';
-                            break;
-                        case 'delivered':
-                            updateData.orderStatus = 'delivered';
-                            break;
-                        case 'exception':
-                        case 'failed_attempt':
-                            updateData.orderStatus = 'delivery_exception';
-                            break;
-                        default:
-                            updateData.orderStatus = 'shipped';
-                    }
-                }
-                
-                if (eventData.tracking_number) {
-                    updateData.trackingNumber = eventData.tracking_number;
-                }
-                
-                if (eventData.estimated_delivery) {
-                    updateData.expectedDelivery = new Date(eventData.estimated_delivery);
-                }
-                break;
-                
-            case 'order.updated':
-                // Handle general order updates
-                if (eventData.status) {
-                    updateData.orderStatus = eventData.status;
-                }
-                break;
-        }
-        
-        // Update the order
-        await Order.findByIdAndUpdate(order._id, updateData);
-        
-        console.log(`Order ${orderId} updated successfully:`, updateData);
-        
-        // TODO: Send customer notification email about shipping update
-        // await sendShippingUpdateEmail(order, updateData);
-        
-    } catch (error) {
-        console.error('Error handling shipping update:', error);
-        // Don't throw error to avoid webhook retry loops
-    }
-}
+// Note: Shipping update handling has been moved to /routes/webhook.js
 
 module.exports = router;
+module.exports.processCompletedOrder = processCompletedOrder;

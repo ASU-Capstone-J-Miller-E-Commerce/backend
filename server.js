@@ -7,6 +7,12 @@ const cookieParser = require('cookie-parser');
 
 // Initialize app
 const app = express();
+
+// Handle webhook routes with raw body BEFORE applying JSON middleware
+const webhook = require('./routes/webhook');
+app.use('/webhook', webhook);
+
+// Apply JSON middleware for all other routes
 app.use(express.json());
 app.use(cookieParser());
 
