@@ -174,6 +174,31 @@ router.get('/verify-session/:session_id', authUser, async (req, res) => {
     }
 });
 
+// Get allowed shipping countries for checkout
+router.get('/shipping-countries', authUser, async (req, res) => {
+    try {
+        const shippingRates = await stripe.shippingRates.list({
+            active: true
+        });
+
+        // Collect all unique country codes from shipping rates metadata
+        const countrySet = new Set();
+        for (const rate of shippingRates.data) {
+            if (rate.metadata && rate.metadata.countries) {
+                const countries = rate.metadata.countries.split(' ');
+                countries.forEach(code => countrySet.add(code));
+            }
+        }
+
+        // Convert to array and sort
+        const allowedCountries = Array.from(countrySet).sort();
+        return res.status(200).json(makeResponse('success', allowedCountries, ['Allowed shipping countries fetched'], false));
+    } catch (error) {
+        console.error('Error fetching shipping countries:', error);
+        return res.status(500).json(makeError(['Failed to fetch shipping countries']));
+    }
+});
+
 async function getCartItems(req, res, next) {
     try {
         // Get cue GUIDs and accessory items from request
