@@ -229,6 +229,7 @@ router.get('/check-auth', async (req, res) => {
                 lastName: userData.lastName,
                 role: userData.role,
                 TFAEnabled: userData.TFAEnabled,
+                emailNotos: userData.emailNotos,
                 isAdmin: (userData.role === 'Admin' && userData.TFAEnabled) ? true : false,
                 cart: {
                     items: validCartItems,

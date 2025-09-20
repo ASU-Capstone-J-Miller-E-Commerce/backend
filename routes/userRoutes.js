@@ -98,6 +98,39 @@ router.put('/userChangePassword', authUser, async (req, res) =>
         }
     });
 
+router.put('/toggleNotifications', authUser, async (req, res) =>
+{
+    try
+    {
+        const token = req.cookies.jwt;
+        const decoded = jwt.verify(token, jwtSecret);
+        const editedUser = await user.findOne({ email: decoded.userId });
+        
+        if(!editedUser)
+        {
+            return res.status(404).json(makeError(['User not found.']));
+        }
+        
+        if(!editedUser.emailNotos)
+        {
+            editedUser.emailNotos = true;
+        }
+        else
+        {
+            editedUser.emailNotos = !editedUser.emailNotos;
+        }
+
+        await editedUser.save();
+
+        return res.status(200).json(makeResponse('success', false, ['Updated your notifiation preferences!'], false));
+
+    }catch(ex)
+    {
+        console.error(ex);
+        res.status(400).json(makeError(['Something went wrong.']));
+    }
+});
+
 // Get user orders with dereferenced item details
 router.get('/orders', authUser, async (req, res) => {
     try {
