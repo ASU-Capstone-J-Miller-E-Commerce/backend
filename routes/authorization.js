@@ -31,7 +31,7 @@ router.post('/register', async (req, res) =>
     try{
         //This will change when front end is complete for sending requests to backend.
         //Testing works with JSON format.
-        const { email, password, fName, lName } = req.body;
+    const { email, password, fName, lName, emailNotos } = req.body;
 
         //Check if the entered email is in fact an email address.
         if(!validator.isEmail(email) || email.length > 320)
@@ -68,7 +68,7 @@ router.post('/register', async (req, res) =>
         //Int is the salt length to generate, longer value is more secure.
         const passHash = await bcrypt.hash(password, 10);
 
-        const newUser = new user( { email: email, password: passHash, firstName: fName, lastName: lName, role: "User", emailNotos: False});
+    const newUser = new user( { email: email, password: passHash, firstName: fName, lastName: lName, role: "User", emailNotos: !!emailNotos });
         await newUser.save();
 
         const accountEmailNotification = returnMessage(email)
