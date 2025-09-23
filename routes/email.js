@@ -162,51 +162,51 @@ router.post("/notification", upload.array("attachments"), async (req, res) => {
 //Email notifications. Contents to be determined. ADMIN ONLY
 router.post("/announcement", upload.array("attachments"), async (req, res) => {
   const { subject, message } = req.body;
-  const files = req.files; 
+  const files = req.files;
 
   if (!subject || !message) {
     return res.status(400).json(makeError(['Please enter all fields.']));
   }
 
-    //Search for user in database.
-    try{
-        //Find each user in the database by email.
-        const users = await User.find({});
+  try {
+    const users = await User.find({ emailNotos: true }); // filter in the query
 
-        // if user has email notos turned on, send them a notification.
-        for ( const user of users )
-        {
-          if(user.emailNotos === true)
-          {
-            const mailOptions = {
-                from: `"Admin" <${process.env.EMAIL_USER}>`,
-                to: user.email,
-                subject,
-                //text: message,
-                html: `<p>This is an automated message. Do not reply to this email.<br>
-                ${message}</p>`,
-                attachments: files?.map(file => ({
-                    filename: file.originalname,
-                    content: file.buffer
-                  }))
-              };
-              try {
-                  const info = await transporter.sendMail(mailOptions);
-                  console.log("Email sent:", info.messageId);
-                  return res.status(201).json(makeResponse('success', false, ['Message Sent Successfully.'], false));
-              } 
-              catch (error) {
-                console.error("Error sending email:", error);
-                return res.status(500).json(makeError(['Failed to send message.']));
-              }
-          }
-        }
-          
-        }catch(ex){
-            console.error(ex);
-            res.status(400).json(makeError(['Something went wrong.']));
-        }
+    if (!users.length) {
+      return res.status(200).json(makeResponse('success', false, ['No recipients with email notifications enabled.'], false));
+    }
 
+    const attachments = files?.map(file => ({
+      filename: file.originalname,
+      content: file.buffer,
+    })) || [];
+
+    const html = `<p>This is an automated message. Do not reply to this email.<br>${message}</p>`;
+
+    const sendPromises = users.map(u => {
+      const mailOptions = {
+        from: `"Admin" <${process.env.EMAIL_USER}>`,
+        to: u.email,
+        subject,
+        html,
+        attachments,
+      };
+      return transporter.sendMail(mailOptions)
+        .then(info => ({ email: u.email, ok: true, id: info.messageId }))
+        .catch(err => ({ email: u.email, ok: false, error: String(err) }));
+    });
+
+    const results = await Promise.all(sendPromises);
+    const sent = results.filter(r => r.ok).length;
+    const failed = results.filter(r => !r.ok);
+
+    const msgs = [`Sent ${sent} announcement email(s).`];
+    if (failed.length) msgs.push(`Failed ${failed.length}: ${failed.map(f => f.email).join(', ')}`);
+
+    return res.status(200).json(makeResponse('success', false, msgs, false));
+  } catch (ex) {
+    console.error(ex);
+    return res.status(500).json(makeError(['Something went wrong.']));
+  }
 });
 
 //Order Confirmation Email. Contents to be determined. 
