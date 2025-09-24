@@ -108,6 +108,9 @@ app.use('/scripts', scripts);
 const email = require('./routes/email');
 app.use('/email', email)
 
+const adminEmail = require('./routes/admin/adminEmail');
+app.use('/admin/email', adminEmail)
+
 // Sample route
 app.get('/', (req, res) => {
   res.send('Hello World');
