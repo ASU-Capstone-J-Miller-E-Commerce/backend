@@ -45,23 +45,33 @@ async function sendEmail(to, subject, text, html) {
 
 //Contact Us Route
 router.post("/contactus", upload.array("attachments"), async (req, res) => {
-  const { subject, message, email } = req.body;
-  const files = req.files; 
+  const { subject, message } = req.body;
+  const files = req.files;
 
-  if (!subject || !message || !email) {
+  if (!subject || !message) {
     return res.status(400).json(makeError(['Please enter all fields.']));
   }
 
-  const mailOptions = {
-      from: `"${email}" <${email}>`,
-      to: process.env.EMAIL_USER,
-      subject,
-      html: `<p>${message}</p>`,
-      attachments: files?.map(file => ({
+  let replyTo = undefined;
+  const emailMatch = message.match(/Client Email:\s*([^<\n]+)\s*<br>/i);
+  if (emailMatch && emailMatch[1]) {
+    replyTo = emailMatch[1].trim();
+  }
+  // Only add attachments if files exist and are non-empty
+  const attachments = Array.isArray(files) && files.length > 0
+    ? files.map(file => ({
         filename: file.originalname,
         content: file.buffer
       }))
-    };
+    : undefined;
+  const mailOptions = {
+    from: `"J.Miller Custom Cues" <${process.env.EMAIL_USER}>`,
+    to: process.env.EMAIL_USER,
+    subject,
+    html: `<p>${message}</p>`,
+    ...(replyTo ? { replyTo } : {}),
+    ...(attachments ? { attachments } : {})
+  };
 
   try {
     const info = await transporter.sendMail(mailOptions);
