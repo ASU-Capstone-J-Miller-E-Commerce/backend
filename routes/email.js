@@ -116,7 +116,7 @@ router.post("/resetPassword", async (req, res) => {
         };
         const info = await transporter.sendMail(mailOptions);
         console.log("Email sent:", info.messageId);
-        return res.status(201).json(makeResponse('success', false, ['Message Sent Successfully.'], false));
+        return res.status(201).json(makeResponse('success', false, ['Reset Token sent successfully.'], false));
           
         }catch(ex){
             console.error(ex);

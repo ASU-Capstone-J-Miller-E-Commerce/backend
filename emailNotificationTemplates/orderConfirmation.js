@@ -13,7 +13,7 @@ const orderConfirmationTemplate = (orderNumber) => {
             <p style="color: #666;">Thank you for your order!</p>
             <p style="color: #666;"><strong>Order Number:</strong> ${orderNumber}</p>
             <p style="margin-top: 20px;">
-              <a href="LINK" style="background-color: #1a73e8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+              <a href="http://localhost:3000/account/orders/${orderNumber}" style="background-color: #1a73e8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
                 View Your Order
               </a>
             </p>
