@@ -45,16 +45,16 @@ async function sendEmail(to, subject, text, html) {
 
 //Contact Us Route
 router.post("/contactus", upload.array("attachments"), async (req, res) => {
-  const { subject, message } = req.body;
+  const { subject, message, email } = req.body;
   const files = req.files; 
 
-  if (!subject || !message) {
+  if (!subject || !message || !email) {
     return res.status(400).json(makeError(['Please enter all fields.']));
   }
 
   const mailOptions = {
-      from: `<${process.env.EMAIL_USER}>`,
-      to: 'jmillercustomcuestest@gmail.com',
+      from: `"${email}" <${email}>`,
+      to: process.env.EMAIL_USER,
       subject,
       html: `<p>${message}</p>`,
       attachments: files?.map(file => ({
