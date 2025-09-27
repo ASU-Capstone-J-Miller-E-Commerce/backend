@@ -44,7 +44,7 @@ async function sendEmail(to, subject, text, html) {
 }
 
 //Contact Us Route
-router.post("/contactus", authUser, upload.array("attachments"), async (req, res) => {
+router.post("/contactus", upload.array("attachments"), async (req, res) => {
   const { subject, message } = req.body;
   const files = req.files; 
 
@@ -53,7 +53,7 @@ router.post("/contactus", authUser, upload.array("attachments"), async (req, res
   }
 
   const mailOptions = {
-      from: `"Admin" <${process.env.EMAIL_USER}>`,
+      from: `<${process.env.EMAIL_USER}>`,
       to: 'jmillercustomcuestest@gmail.com',
       subject,
       html: `<p>${message}</p>`,
@@ -99,7 +99,7 @@ router.post("/resetPassword", async (req, res) => {
 
         //Send password to email.
         const mailOptions = {
-          from: `"Admin" <${process.env.EMAIL_USER}>`,
+          from: `"J.Miller Custom Cues" <${process.env.EMAIL_USER}>`,
           to: email,
           subject,
           html: htmlContent
@@ -118,11 +118,11 @@ router.post("/resetPassword", async (req, res) => {
 router.post("/orderconfirm", authUser, async (req, res) => {
   const { email , orderID } = req.body;
     try{
-      const subject = "J. Miller Custom Cues Order Confirmation"
+      const subject = "J.Miller Custom Cues Order Confirmation"
       const htmlContent = orderConfirmationTemplate(orderID)
 
       const mailOptions = {
-                from: `"J. Miller Custom Cues" <${process.env.EMAIL_USER}>`,
+                from: `"J.Miller Custom Cues" <${process.env.EMAIL_USER}>`,
                 to: email,
                 subject,
                 html: htmlContent
