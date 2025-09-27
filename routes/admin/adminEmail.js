@@ -7,16 +7,21 @@ const Order = require('../../models/order')
 const router = express.Router()
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto');
-const multer = require("multer");
-const upload = multer({ storage: multer.memoryStorage() });
 const { authUser , authAdmin } = require('../authorization')
 
-//Email notifications. Contents to be determined. ADMIN ONLY
-router.post("/announcement", authAdmin, upload.array("attachments"), async (req, res) => {
-  const { subject, message } = req.body;
-  const files = req.files;
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER, 
+    pass: process.env.EMAIL_PASS  
+  }
+});
 
-  if (!subject || !message) {
+//Email notifications. Contents to be determined. ADMIN ONLY
+router.post("/announcement", authAdmin, async (req, res) => {
+  const { subject, html } = req.body;
+
+  if (!subject || !html) {
     return res.status(400).json(makeError(['Please enter all fields.']));
   }
 
@@ -27,20 +32,12 @@ router.post("/announcement", authAdmin, upload.array("attachments"), async (req,
       return res.status(200).json(makeResponse('success', false, ['No recipients with email notifications enabled.'], false));
     }
 
-    const attachments = files?.map(file => ({
-      filename: file.originalname,
-      content: file.buffer,
-    })) || [];
-
-    const html = `<p>This is an automated message. Do not reply to this email.<br>${message}</p>`;
-
     const sendPromises = users.map(u => {
       const mailOptions = {
         from: `"Admin" <${process.env.EMAIL_USER}>`,
         to: u.email,
         subject,
-        html,
-        attachments,
+        html
       };
       return transporter.sendMail(mailOptions)
         .then(info => ({ email: u.email, ok: true, id: info.messageId }))

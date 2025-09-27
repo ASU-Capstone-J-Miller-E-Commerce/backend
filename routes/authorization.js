@@ -68,7 +68,7 @@ router.post('/register', async (req, res) =>
         //Int is the salt length to generate, longer value is more secure.
         const passHash = await bcrypt.hash(password, 10);
 
-    const newUser = new user( { email: email, password: passHash, firstName: fName, lastName: lName, role: "User", emailNotos: !!emailNotos });
+        const newUser = new user( { email: email, password: passHash, firstName: fName, lastName: lName, role: "User", emailNotos: !!emailNotos });
         await newUser.save();
 
         const accountEmailNotification = returnMessage(email)

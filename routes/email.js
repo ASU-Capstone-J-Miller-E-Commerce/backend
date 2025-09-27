@@ -1,3 +1,5 @@
+const resetPasswordTemplate = require('../emailNotificationTemplates/resetPassword.js')
+const orderConfirmationTemplate = require('../emailNotificationTemplates/orderConfirmation.js')
 const express = require('express')
 const nodemailer = require("nodemailer");
 const { makeData } = require('../response/makeResponse')
@@ -11,11 +13,13 @@ const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
 const { authUser } = require('./authorization')
 
+
+
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER, // your admin email
-    pass: process.env.EMAIL_PASS  // app password (NOT your real Gmail pass!)
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS 
   }
 });
 
@@ -44,13 +48,7 @@ router.post("/contactus", authUser, upload.array("attachments"), async (req, res
   const { subject, message } = req.body;
   const files = req.files; 
 
-    console.log("Body:")
-    console.log(req.body)
-
   if (!subject || !message) {
-    console.log("Fucl")
-    console.log(subject)
-    console.log(message)
     return res.status(400).json(makeError(['Please enter all fields.']));
   }
 
@@ -75,8 +73,7 @@ router.post("/contactus", authUser, upload.array("attachments"), async (req, res
   }
 });
 
-//Reset password route. This needs to be hooked up still.
-//
+//Reset password route.
 router.post("/resetPassword", async (req, res) => {
   const { email } = req.body;
 
@@ -96,15 +93,16 @@ router.post("/resetPassword", async (req, res) => {
         const passHash = await bcrypt.hash(resetToken, 10);
         editedUser.password = passHash;
         await editedUser.save();
+
         const subject = "Password Reset."
+        const htmlContent = resetPasswordTemplate(resetToken);
+
         //Send password to email.
         const mailOptions = {
           from: `"Admin" <${process.env.EMAIL_USER}>`,
           to: email,
           subject,
-          //text: message,
-          html: `<p>This is an automated message. Do not reply to this email.<br>
-          Your password reset token is: ${resetToken}. Use this to login to your account.</p>`
+          html: htmlContent
         };
         const info = await transporter.sendMail(mailOptions);
         console.log("Email sent:", info.messageId);
@@ -118,15 +116,16 @@ router.post("/resetPassword", async (req, res) => {
 
 //Order Confirmation Email. Contents to be determined. 
 router.post("/orderconfirm", authUser, async (req, res) => {
-  const { email , userOrder } = req.body;
+  const { email , orderID } = req.body;
     try{
+      const subject = "J. Miller Custom Cues Order Confirmation"
+      const htmlContent = orderConfirmationTemplate(orderID)
+
       const mailOptions = {
                 from: `"J. Miller Custom Cues" <${process.env.EMAIL_USER}>`,
                 to: email,
                 subject,
-                //text: message,
-                html: `<p>This is an automated message. Do not reply to this email.<br>
-                ${message}</p>`
+                html: htmlContent
               };
 
         const info = await transporter.sendMail(mailOptions);
