@@ -34,7 +34,7 @@ router.post("/announcement", authAdmin, async (req, res) => {
 
     const sendPromises = users.map(u => {
       const mailOptions = {
-        from: `"Admin" <${process.env.EMAIL_USER}>`,
+        from: `"J.Miller Custom Cues" <${process.env.EMAIL_USER}>`,
         to: u.email,
         subject,
         html
