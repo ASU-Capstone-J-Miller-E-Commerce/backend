@@ -87,41 +87,38 @@ router.post("/contactus", upload.array("attachments"), async (req, res) => {
 router.post("/resetPassword", async (req, res) => {
   const { email } = req.body;
 
-    //Search for user in database.
-    try{
-        //Find user in the database by email.
-        const login = await User.findOne({ email });
-        if(!login)
-        {
-            //User not found. Invalid email.
-            return res.status(400).json(makeError(['Invalid Email or Password.']));
-        }
+  // Always respond with success and a generic message
+  try {
+    const userRecord = await User.findOne({ email });
+    if (userRecord) {
+      //Generate new password, encrypt and save.
+      const resetToken = crypto.randomBytes(8).toString("hex");
+      const passHash = await bcrypt.hash(resetToken, 10);
+      userRecord.password = passHash;
+      await userRecord.save();
 
-        //Generate new password, encrypt and save.
-        const resetToken = crypto.randomBytes(8).toString("hex");
-        const editedUser = await User.findOne({email: email});
-        const passHash = await bcrypt.hash(resetToken, 10);
-        editedUser.password = passHash;
-        await editedUser.save();
-
-        const subject = "Password Reset."
-        const htmlContent = resetPasswordTemplate(resetToken);
-
-        //Send password to email.
-        const mailOptions = {
-          from: `"J.Miller Custom Cues" <${process.env.EMAIL_USER}>`,
-          to: email,
-          subject,
-          html: htmlContent
-        };
+      const subject = "Password Reset.";
+      const htmlContent = resetPasswordTemplate(resetToken);
+      const mailOptions = {
+        from: `"J.Miller Custom Cues" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject,
+        html: htmlContent
+      };
+      try {
         const info = await transporter.sendMail(mailOptions);
         console.log("Email sent:", info.messageId);
-        return res.status(201).json(makeResponse('success', false, ['Reset Token sent successfully.'], false));
-          
-        }catch(ex){
-            console.error(ex);
-            res.status(400).json(makeError(['Something went wrong.']));
-        }
+      } catch (emailErr) {
+        console.error("Error sending reset email:", emailErr);
+      }
+    }
+    // Always respond with success, regardless of user existence
+    return res.status(200).json(makeResponse('success', false, ['If the email exists, a temporary password has been sent.'], false));
+  } catch (ex) {
+    console.error(ex);
+    // Still respond with success to avoid leaking info
+    return res.status(200).json(makeResponse('success', false, ['If the email exists, a temporary password has been sent.'], false));
+  }
 });
 
 async function sendOrderConfirmationEmail({ email, orderID }) {
