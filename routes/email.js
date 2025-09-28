@@ -124,30 +124,24 @@ router.post("/resetPassword", async (req, res) => {
         }
 });
 
-//Order Confirmation Email. Contents to be determined. 
-router.post("/orderconfirm", authUser, async (req, res) => {
-  const { email , orderID } = req.body;
-    try{
-      const subject = "J.Miller Custom Cues Order Confirmation"
-      const htmlContent = orderConfirmationTemplate(orderID)
-
-      const mailOptions = {
-                from: `"J.Miller Custom Cues" <${process.env.EMAIL_USER}>`,
-                to: email,
-                subject,
-                html: htmlContent
-              };
-
-        const info = await transporter.sendMail(mailOptions);
-        console.log("Order Confirmation sent:", info.messageId);
-        return res.status(201).json(makeResponse('success', false, ['Order Confirmation Sent Successfully.'], false));
-
-        }catch(ex){
-            console.error(ex);
-            res.status(400).json(makeError(['Something went wrong.']));
-        }
-
-});
-
+async function sendOrderConfirmationEmail({ email, orderID }) {
+  try {
+    const subject = "J.Miller Custom Cues Order Confirmation";
+    const htmlContent = orderConfirmationTemplate(orderID);
+    const mailOptions = {
+      from: `"J.Miller Custom Cues" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject,
+      html: htmlContent
+    };
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Order Confirmation sent:", info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (ex) {
+    console.error(ex);
+    throw new Error('Failed to send order confirmation email.');
+  }
+}
 
 module.exports = router;
+module.exports.sendOrderConfirmationEmail = sendOrderConfirmationEmail;
