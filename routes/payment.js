@@ -5,6 +5,7 @@ const Cue = require('../models/cue')
 const Accessory = require('../models/accessory')
 const { makeError, makeResponse, makeData } = require('../response/makeResponse')
 const { authUser } = require('./authorization')
+const { sendOrderConfirmationEmail } = require('./email')
 
 
 router.post('/create-checkout-session', authUser, getCartItems, async (req, res) => {
@@ -385,7 +386,10 @@ async function processCompletedOrder(orderDetails) {
         );
 
         // 4. Send confirmation email
-        // await sendOrderConfirmationEmail(orderDetails);
+        await sendOrderConfirmationEmail({
+            email: orderDetails.customer.email,
+            orderID: order.orderId
+        });
 
         // 5. Log analytics
         console.log('Order analytics:', {

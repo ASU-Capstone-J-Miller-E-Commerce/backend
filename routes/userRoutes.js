@@ -202,10 +202,15 @@ router.get('/orders/:orderId', authUser, async (req, res) => {
         const { orderId } = req.params;
 
         // Find the order for this user
-        const order = await Order.findOne({ customer: userEmail, orderId }).lean();
+        const order = await Order.findOne({ orderId }).lean();
 
         if (!order) {
             return res.status(404).json(makeError(['Order not found'], false));
+        }
+
+        // Explicitly verify the order belongs to the JWT user
+        if (order.customer !== userEmail) {
+            return res.status(403).json(makeError(['You are not authorized to view this order'], false));
         }
 
         // Dereference cues
