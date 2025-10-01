@@ -4,11 +4,23 @@ require('dotenv').config();
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 
+const allowedOrigins = ["http://104.248.176.217/"];
 
 // Initialize app
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
+
+app.use(cors({
+  origin: function (origin, cb) {
+    // allow no-origin (curl, server-to-server) and specific origins
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    cb(new Error("Not allowed by CORS"));
+  },
+
+  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
+  allowedHeaders: ["Content-Type","Authorization"]
+}));
 
 
 app.use(cors({
