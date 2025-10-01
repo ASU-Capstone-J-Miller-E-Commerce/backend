@@ -17,7 +17,6 @@ require('dotenv').config()
 const jwtSecret = process.env.JWT_SECRET_KEY
 const ENC_KEY = process.env.ENC_KEY
 const rateLimit = require('express-rate-limit');
-const { returnMessage } = require('../emailNotificationTemplates/accountCreation')
 
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, //15 minutes
