@@ -28,8 +28,16 @@ router.get('/:id', authAdmin, getCue, (req, res, next) => {
 })
 
 router.post('/', authAdmin, async (req, res, next) => {
-    const cue = new Cue(req.body);
     try {
+        // Check featured cue limit before creating
+        if (req.body.featured === true) {
+            const featuredCount = await Cue.countDocuments({ featured: true });
+            if (featuredCount >= 4) {
+                return res.status(400).json(makeError(['Maximum of 4 featured cues allowed. Please unfeatured another cue first.']));
+            }
+        }
+
+        const cue = new Cue(req.body);
 
         const priceDecimal = parseFloat(req.body.price)
 
@@ -61,6 +69,14 @@ router.post('/', authAdmin, async (req, res, next) => {
 
 router.patch('/:id', authAdmin, getCue, async (req, res, next) => {
     try {
+        // Check featured cue limit before updating
+        if (req.body.featured === true && res.cue.featured !== true) {
+            const featuredCount = await Cue.countDocuments({ featured: true });
+            if (featuredCount >= 4) {
+                return res.status(400).json(makeError(['Maximum of 4 featured cues allowed. Please unfeatured another cue first.']));
+            }
+        }
+
         for (const key in req.body) {
             if (req.body[key] != null) {
                 res.cue[key] = req.body[key];
