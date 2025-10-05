@@ -25,6 +25,20 @@ router.get('/', async (req, res, next) => {
     }
 })
 
+// Get featured cues (public route) - MUST be before /:guid route
+router.get('/featured', async (req, res, next) => {
+    try {
+        const featuredCues = await Cue.find({ featured: true, status: 'Available' })
+            .select('guid cueNumber name price status imageUrls -_id')
+            .limit(4)
+            .sort({ updatedOn: 1 });
+        
+        res.status(200).json(makeData(featuredCues));
+    } catch (err) {
+        res.status(500).json(makeError(["Internal server error, please try again later or contact support"]));
+    }
+});
+
 //get one by guid with dereferenced materials
 router.get('/:guid', getCueByGuid, async (req, res, next) => {
     try {

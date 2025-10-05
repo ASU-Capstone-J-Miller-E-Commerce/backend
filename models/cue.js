@@ -13,6 +13,7 @@ const cueSchema = new mongoose.Schema({
     description: { type: String, required: false },
     notes: { type: String, required: false },
     status: { type: String, required: true },
+    featured: { type: Boolean, default: false },
 
     // Shaft
     shaftMaterial: { type: String, required: false },
