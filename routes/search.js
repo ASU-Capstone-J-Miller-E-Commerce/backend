@@ -39,7 +39,7 @@ router.get('/', async (req, res, next) => {
                     { cueNumber: searchRegex }
                 ],
                 status: { $in: ['Available', 'Coming Soon', 'Sold'] }
-            }).select('guid cueNumber name price imageUrls -_id');
+            }).select('guid cueNumber name price imageUrls featured -_id');
             
             accessories = await Accessory.find({
                 $or: [
@@ -74,7 +74,7 @@ router.get('/', async (req, res, next) => {
                     { cueNumber: searchRegex }
                 ],
                 status: { $in: ['Available', 'Coming Soon', 'Sold'] }
-            }).limit(limit).select('guid cueNumber name price imageUrls -_id');
+            }).limit(limit).select('guid cueNumber name price imageUrls featured -_id');
             
             limit = limit - cues.length;
             if (limit > 0) {
