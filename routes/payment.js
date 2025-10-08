@@ -371,11 +371,14 @@ async function processCompletedOrder(orderDetails) {
             // Don't throw error as the order was successfully created
         }
         
-        // 2. Update inventory - mark cues as sold
+        // 2. Update inventory - mark cues as sold and remove from featured
         if (orderDetails.items.cues && orderDetails.items.cues.length > 0) {
             await Cue.updateMany(
                 { guid: { $in: orderDetails.items.cues } },
-                { status: 'Sold' }
+                { 
+                    status: 'Sold',
+                    featured: false
+                }
             );
         }
 
