@@ -332,9 +332,8 @@ async function processCompletedOrder(orderDetails) {
         }
 
         // Create order document
-        const order = await Order.create({
-            // Let mongoose generate the guid and orderId automatically
-            customer: orderDetails.customer.email, // Store email directly
+        const order = await Order.createWithUniqueOrderId({
+            customer: orderDetails.customer.email,
             orderStatus: 'confirmed',
             totalAmount: orderDetails.amount,
             currency: orderDetails.currency.toUpperCase(),
@@ -355,7 +354,6 @@ async function processCompletedOrder(orderDetails) {
         
         // Update invoice metadata with the actual order ID
         try {
-            // Get the checkout session to find the invoice
             const checkoutSession = await stripe.checkout.sessions.retrieve(orderDetails.sessionId);
             if (checkoutSession.invoice) {
                 await stripe.invoices.update(checkoutSession.invoice, {
@@ -368,7 +366,6 @@ async function processCompletedOrder(orderDetails) {
             }
         } catch (invoiceError) {
             console.error('Error updating invoice metadata:', invoiceError);
-            // Don't throw error as the order was successfully created
         }
         
         // 2. Update inventory - mark cues as sold and remove from featured
@@ -388,11 +385,17 @@ async function processCompletedOrder(orderDetails) {
             { $set: { cart: [] } }
         );
 
-        // 4. Send confirmation email
-        await sendOrderConfirmationEmail({
-            email: orderDetails.customer.email,
-            orderID: order.orderId
-        });
+        // 4. Send confirmation email (wrapped in try-catch to prevent order failure)
+        try {
+            await sendOrderConfirmationEmail({
+                email: orderDetails.customer.email,
+                orderID: order.orderId
+            });
+            console.log('Order confirmation email sent successfully');
+        } catch (emailError) {
+            console.error('Failed to send order confirmation email:', emailError);
+            // Don't throw - email failure shouldn't break order processing
+        }
 
         // 5. Log analytics
         console.log('Order analytics:', {
@@ -408,6 +411,7 @@ async function processCompletedOrder(orderDetails) {
             orderId: order.orderId
         };
     } catch (error) {
+        console.error('Error in processCompletedOrder:', error);
         throw error;
     }
 }
