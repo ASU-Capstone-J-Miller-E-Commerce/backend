@@ -1,10 +1,12 @@
 const mongoose = require("mongoose");
-const { v4: uuidv4 } = require("uuid");
+const crypto = require("crypto");
+
+const genOrderId = () => `JM-${crypto.randomBytes(8).toString('hex').toUpperCase()}`;
 
 const orderSchema = new mongoose.Schema({
     orderId: {
         type: String,
-        default: () => `JM-${uuidv4()}`,
+        default: genOrderId,
         unique: true
     },
     customer: {
@@ -66,5 +68,28 @@ const orderSchema = new mongoose.Schema({
         default: Date.now,
     },
 });
+
+// Ensure an index exists at the database level
+orderSchema.index({ orderId: 1 }, { unique: true });
+
+// Helper: create with retry on duplicate-key (E11000) for orderId
+orderSchema.statics.createWithUniqueOrderId = async function(doc, maxRetries = 3) {
+    const Model = this;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        if (!doc.orderId) doc.orderId = genOrderId();
+        try {
+            return await Model.create(doc);
+        } catch (err) {
+            // Mongo duplicate key error code
+            if (err && (err.code === 11000 || err.code === 11001) && /orderId/.test(err.message)) {
+                // regenerate and retry
+                doc.orderId = genOrderId();
+                continue;
+            }
+            throw err;
+        }
+    }
+    throw new Error('Failed to create order with unique orderId after retries');
+};
 
 module.exports = mongoose.model("order", orderSchema);
