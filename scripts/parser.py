@@ -16,7 +16,7 @@ def clean_color(color):
         return ""
     return color.split(' ')[0].strip()
 
-print("CSV Parser for J. Miller C.C. Project")
+print("CSV Parser for J.Miller C.C. Project")
 print(". . . Starting up . . .")
 
 #GLOBAL VARS AND ENV VARIABLES.

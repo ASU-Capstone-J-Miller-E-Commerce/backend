@@ -139,6 +139,21 @@ router.get('/verify-session/:session_id', authUser, async (req, res) => {
         const cueGuids = session.metadata.cue_guids ? JSON.parse(session.metadata.cue_guids) : [];
         const accessoryItems = session.metadata.accessory_items ? JSON.parse(session.metadata.accessory_items) : [];
 
+        // Fetch actual cue and accessory details with names
+        const cues = await Cue.find({ guid: { $in: cueGuids } }).select('guid name');
+        const accessoryGuids = accessoryItems.map(item => item.guid);
+        const accessories = await Accessory.find({ guid: { $in: accessoryGuids } }).select('guid name');
+
+        // Combine accessories with their quantities and names
+        const accessoriesWithDetails = accessories.map(accessory => {
+            const item = accessoryItems.find(item => item.guid === accessory.guid);
+            return {
+                guid: accessory.guid,
+                name: accessory.name,
+                quantity: item ? item.quantity : 1
+            };
+        });
+
         // Extract shipping details from the correct location
         let shippingDetails = session.shipping_details;
         if (!shippingDetails && session.collected_information?.shipping_details) {
@@ -160,8 +175,8 @@ router.get('/verify-session/:session_id', authUser, async (req, res) => {
             shipping: shippingDetails,
             billing: session.customer_details.address,
             items: {
-                cues: cueGuids,
-                accessories: accessoryItems
+                cues: cues.map(cue => ({ guid: cue.guid, name: cue.name })),
+                accessories: accessoriesWithDetails
             },
             createdAt: new Date(session.created * 1000),
             metadata: session.metadata
@@ -312,18 +327,18 @@ async function processCompletedOrder(orderDetails) {
             throw new Error(`Customer not found with email: ${orderDetails.customer.email}`);
         }
 
-        // Prepare order items with GUIDs
+        // Prepare order items with GUIDs only (not the full objects)
         const orderItems = {
             cueGuids: [],
             accessoryGuids: []
         };
         
-        // Add cue GUIDs to order items
+        // Add cue GUIDs to order items - extract just the GUIDs
         if (orderDetails.items.cues && orderDetails.items.cues.length > 0) {
-            orderItems.cueGuids = orderDetails.items.cues;
+            orderItems.cueGuids = orderDetails.items.cues.map(cue => cue.guid);
         }
         
-        // Add accessory GUIDs with quantities to order items
+        // Add accessory GUIDs with quantities to order items - extract just the GUIDs
         if (orderDetails.items.accessories && orderDetails.items.accessories.length > 0) {
             orderItems.accessoryGuids = orderDetails.items.accessories.map(item => ({
                 guid: item.guid,
@@ -332,9 +347,8 @@ async function processCompletedOrder(orderDetails) {
         }
 
         // Create order document
-        const order = await Order.create({
-            // Let mongoose generate the guid and orderId automatically
-            customer: orderDetails.customer.email, // Store email directly
+        const order = await Order.createWithUniqueOrderId({
+            customer: orderDetails.customer.email,
             orderStatus: 'confirmed',
             totalAmount: orderDetails.amount,
             currency: orderDetails.currency.toUpperCase(),
@@ -355,7 +369,6 @@ async function processCompletedOrder(orderDetails) {
         
         // Update invoice metadata with the actual order ID
         try {
-            // Get the checkout session to find the invoice
             const checkoutSession = await stripe.checkout.sessions.retrieve(orderDetails.sessionId);
             if (checkoutSession.invoice) {
                 await stripe.invoices.update(checkoutSession.invoice, {
@@ -368,14 +381,17 @@ async function processCompletedOrder(orderDetails) {
             }
         } catch (invoiceError) {
             console.error('Error updating invoice metadata:', invoiceError);
-            // Don't throw error as the order was successfully created
         }
         
-        // 2. Update inventory - mark cues as sold
+        // 2. Update inventory - mark cues as sold and remove from featured - use GUIDs only
         if (orderDetails.items.cues && orderDetails.items.cues.length > 0) {
+            const cueGuids = orderDetails.items.cues.map(cue => cue.guid);
             await Cue.updateMany(
-                { guid: { $in: orderDetails.items.cues } },
-                { status: 'Sold' }
+                { guid: { $in: cueGuids } },
+                { 
+                    status: 'Sold',
+                    featured: false
+                }
             );
         }
 
@@ -385,11 +401,17 @@ async function processCompletedOrder(orderDetails) {
             { $set: { cart: [] } }
         );
 
-        // 4. Send confirmation email
-        await sendOrderConfirmationEmail({
-            email: orderDetails.customer.email,
-            orderID: order.orderId
-        });
+        // 4. Send confirmation email (wrapped in try-catch to prevent order failure)
+        try {
+            await sendOrderConfirmationEmail({
+                email: orderDetails.customer.email,
+                orderID: order.orderId
+            });
+            console.log('Order confirmation email sent successfully');
+        } catch (emailError) {
+            console.error('Failed to send order confirmation email:', emailError);
+            // Don't throw - email failure shouldn't break order processing
+        }
 
         // 5. Log analytics
         console.log('Order analytics:', {
@@ -405,6 +427,7 @@ async function processCompletedOrder(orderDetails) {
             orderId: order.orderId
         };
     } catch (error) {
+        console.error('Error in processCompletedOrder:', error);
         throw error;
     }
 }

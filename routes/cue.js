@@ -18,7 +18,7 @@ router.get('/', async (req, res, next) => {
     try {
         const cues = await Cue.find({
             status: { $in: ['Available', 'Coming Soon', 'Sold'] }
-        }).select('guid cueNumber name price status imageUrls status isFullSplice includeWrap createdOn forearmInlayQuantity forearmPointQuantity handleInlayQuantity buttsleeveInlayQuantity buttSleevePointQuantity -_id')
+        }).select('guid cueNumber name price status imageUrls featured isFullSplice includeWrap createdOn forearmInlayQuantity forearmPointQuantity handleInlayQuantity buttsleeveInlayQuantity buttSleevePointQuantity -_id')
         res.status(200).json(makeData(cues))
     } catch (err) {
         res.status(500).json(makeError([err.message]))
@@ -29,7 +29,7 @@ router.get('/', async (req, res, next) => {
 router.get('/featured', async (req, res, next) => {
     try {
         const featuredCues = await Cue.find({ featured: true, status: 'Available' })
-            .select('guid cueNumber name price status imageUrls -_id')
+            .select('guid cueNumber name price status imageUrls featured -_id')
             .limit(4)
             .sort({ updatedOn: 1 });
         
