@@ -27,11 +27,14 @@ router.get('/:id', authAdmin, getAnnouncement, (req, res, next) => {
 })
 
 router.post('/', authAdmin, async (req, res, next) => {
+    const { startAt, endAt } = req.body;
+    if (startAt && !endAt) {
+        return res.status(400).json(makeError(['If start date is set, end date must also be set.']));
+    }
     const announcement = new Announcement(req.body);
 
     try {
         const newAnnouncement = await announcement.save()
-        
         res.status(201).json(makeResponse('success', newAnnouncement, ['New announcement successfully created.'], false))
     } catch (err) {
         res.status(400).json(makeError([err.message]))
@@ -39,17 +42,19 @@ router.post('/', authAdmin, async (req, res, next) => {
 })
 
 router.patch('/:id', authAdmin, getAnnouncement, async (req, res, next) => {
+    const { startAt, endAt } = req.body;
+    if (startAt && !endAt) {
+        return res.status(400).json(makeError(['If start date is set, end date must also be set.']));
+    }
     try {
         for (const key in req.body) {
             if (req.body[key] != null) {
                 res.announcement[key] = req.body[key];
             }
         }
-
         res.announcement.updatedOn = Date.now();
 
         const updatedAnnouncement = await res.announcement.save()
-
         res.json(makeResponse('success', updatedAnnouncement, ['Announcement edited and saved successfully.'], false))
     } catch (err) {
         res.status(400).json(makeError([err.message]))

@@ -18,7 +18,15 @@ const announcementSchema = new mongoose.Schema({
     },
     startAt: {
         type: Date,
-        required: false
+        required: false,
+        validate: {
+            validator: function(value) {
+                // If startAt is set, endAt must also be set
+                if (value && !this.endAt) return false;
+                return true;
+            },
+            message: 'If start date is set, end date must also be set.'
+        }
     },
     endAt: {
         type: Date,
