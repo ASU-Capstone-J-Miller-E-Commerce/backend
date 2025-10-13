@@ -132,60 +132,109 @@ router.get('/verify-session/:session_id', authUser, async (req, res) => {
             return res.status(400).json(makeError(['Payment not completed']));
         }
 
-        // Get the payment intent to get more details
-        const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent);
-
-        // Extract order information from metadata
-        const cueGuids = session.metadata.cue_guids ? JSON.parse(session.metadata.cue_guids) : [];
-        const accessoryItems = session.metadata.accessory_items ? JSON.parse(session.metadata.accessory_items) : [];
-
-        // Fetch actual cue and accessory details with names
-        const cues = await Cue.find({ guid: { $in: cueGuids } }).select('guid name');
-        const accessoryGuids = accessoryItems.map(item => item.guid);
-        const accessories = await Accessory.find({ guid: { $in: accessoryGuids } }).select('guid name');
-
-        // Combine accessories with their quantities and names
-        const accessoriesWithDetails = accessories.map(accessory => {
-            const item = accessoryItems.find(item => item.guid === accessory.guid);
-            return {
-                guid: accessory.guid,
-                name: accessory.name,
-                quantity: item ? item.quantity : 1
-            };
+        // Check if order already exists for this session
+        const Order = require('../models/order');
+        let existingOrder = await Order.findOne({ 
+            sessionId: req.params.session_id 
         });
 
-        // Extract shipping details from the correct location
-        let shippingDetails = session.shipping_details;
-        if (!shippingDetails && session.collected_information?.shipping_details) {
-            shippingDetails = session.collected_information.shipping_details;
-            console.log('Using shipping details from collected_information');
+        let enhancedOrderDetails;
+        
+        if (existingOrder) {
+            // Order already exists, just return the details without creating a new one
+            console.log('Order already exists for session:', req.params.session_id);
+            
+            // Reconstruct order details from existing order
+            const cueGuids = existingOrder.orderItems.cueGuids || [];
+            const accessoryItems = existingOrder.orderItems.accessoryGuids || [];
+
+            const cues = await Cue.find({ guid: { $in: cueGuids } }).select('guid name');
+            const accessoryGuids = accessoryItems.map(item => item.guid);
+            const accessories = await Accessory.find({ guid: { $in: accessoryGuids } }).select('guid name');
+
+            const accessoriesWithDetails = accessories.map(accessory => {
+                const item = accessoryItems.find(item => item.guid === accessory.guid);
+                return {
+                    guid: accessory.guid,
+                    name: accessory.name,
+                    quantity: item ? item.quantity : 1
+                };
+            });
+
+            enhancedOrderDetails = {
+                sessionId: session.id,
+                orderId: existingOrder.orderId,
+                status: 'paid',
+                amount: existingOrder.totalAmount,
+                currency: existingOrder.currency.toLowerCase(),
+                customer: {
+                    email: existingOrder.customer,
+                    name: session.customer_details.name,
+                    phone: session.customer_details.phone
+                },
+                shipping: session.shipping_details,
+                billing: session.customer_details.address,
+                items: {
+                    cues: cues.map(cue => ({ guid: cue.guid, name: cue.name })),
+                    accessories: accessoriesWithDetails
+                },
+                createdAt: existingOrder.createdAt,
+                metadata: session.metadata
+            };
+        } else {
+            // New order, process normally
+            console.log('Creating new order for session:', req.params.session_id);
+            
+            // ... existing order details preparation code ...
+            const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent);
+            const cueGuids = session.metadata.cue_guids ? JSON.parse(session.metadata.cue_guids) : [];
+            const accessoryItems = session.metadata.accessory_items ? JSON.parse(session.metadata.accessory_items) : [];
+
+            const cues = await Cue.find({ guid: { $in: cueGuids } }).select('guid name');
+            const accessoryGuids = accessoryItems.map(item => item.guid);
+            const accessories = await Accessory.find({ guid: { $in: accessoryGuids } }).select('guid name');
+
+            const accessoriesWithDetails = accessories.map(accessory => {
+                const item = accessoryItems.find(item => item.guid === accessory.guid);
+                return {
+                    guid: accessory.guid,
+                    name: accessory.name,
+                    quantity: item ? item.quantity : 1
+                };
+            });
+
+            let shippingDetails = session.shipping_details;
+            if (!shippingDetails && session.collected_information?.shipping_details) {
+                shippingDetails = session.collected_information.shipping_details;
+            }
+
+            const orderDetails = {
+                sessionId: session.id,
+                paymentIntentId: paymentIntent.id,
+                status: 'paid',
+                amount: session.amount_total / 100,
+                currency: session.currency,
+                customer: {
+                    email: session.customer_details.email,
+                    name: session.customer_details.name,
+                    phone: session.customer_details.phone
+                },
+                shipping: shippingDetails,
+                billing: session.customer_details.address,
+                items: {
+                    cues: cues.map(cue => ({ guid: cue.guid, name: cue.name })),
+                    accessories: accessoriesWithDetails
+                },
+                createdAt: new Date(session.created * 1000),
+                metadata: session.metadata
+            };
+
+            enhancedOrderDetails = await processCompletedOrder(orderDetails);
         }
-
-        const orderDetails = {
-            sessionId: session.id,
-            paymentIntentId: paymentIntent.id,
-            status: 'paid',
-            amount: session.amount_total / 100, // Convert from cents
-            currency: session.currency,
-            customer: {
-                email: session.customer_details.email,
-                name: session.customer_details.name,
-                phone: session.customer_details.phone
-            },
-            shipping: shippingDetails,
-            billing: session.customer_details.address,
-            items: {
-                cues: cues.map(cue => ({ guid: cue.guid, name: cue.name })),
-                accessories: accessoriesWithDetails
-            },
-            createdAt: new Date(session.created * 1000),
-            metadata: session.metadata
-        };
-
-        const enhancedOrderDetails = await processCompletedOrder(orderDetails);
 
         return res.status(200).json(makeResponse('success', enhancedOrderDetails, ['Payment verified successfully'], false));
     } catch (error) {
+        console.error('Error in verify-session:', error);
         return res.status(500).json(makeError(['Failed to verify payment session']));
     }
 });
@@ -361,6 +410,8 @@ async function processCompletedOrder(orderDetails) {
             } : {},
             billingAddress: orderDetails.billing || {},
             orderItems: orderItems,
+            sessionId: orderDetails.sessionId, // Direct field instead of nested in metadata
+            metadata: orderDetails.metadata || {}, // Keep other metadata separate
             createdAt: orderDetails.createdAt,
             updatedAt: new Date()
         });

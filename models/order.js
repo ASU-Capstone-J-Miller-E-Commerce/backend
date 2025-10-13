@@ -59,6 +59,14 @@ const orderSchema = new mongoose.Schema({
             quantity: Number
         }]
     },
+    sessionId: {
+        type: String,
+        index: true // Add index for faster lookups
+    },
+    metadata: {
+        type: Object,
+        default: {}
+    },
     createdAt: {
         type: Date,
         default: Date.now,
@@ -71,6 +79,7 @@ const orderSchema = new mongoose.Schema({
 
 // Ensure an index exists at the database level
 orderSchema.index({ orderId: 1 }, { unique: true });
+orderSchema.index({ sessionId: 1 }); // Index for session lookup
 
 // Helper: create with retry on duplicate-key (E11000) for orderId
 orderSchema.statics.createWithUniqueOrderId = async function(doc, maxRetries = 3) {
