@@ -132,11 +132,21 @@ router.get('/verify-session/:session_id', authUser, async (req, res) => {
             return res.status(400).json(makeError(['Payment not completed']));
         }
 
+        // Security check: Verify the authenticated user's email matches the session's customer email
+        if (session.customer_details.email !== req.userId) {
+            return res.status(403).json(makeError(['Access denied: You can only view your own orders']));
+        }
+
         // Check if order already exists for this session
         const Order = require('../models/order');
         let existingOrder = await Order.findOne({ 
             sessionId: req.params.session_id 
         });
+
+        // Additional security check: If order exists, verify the customer email matches
+        if (existingOrder && existingOrder.customer !== req.userId) {
+            return res.status(403).json(makeError(['Access denied: You can only view your own orders']));
+        }
 
         let enhancedOrderDetails;
         
