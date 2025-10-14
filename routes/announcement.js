@@ -13,7 +13,16 @@ router.use(function(req, res, next) {
 //get all active announcements (public route)
 router.get('/', async (req, res, next) => {
     try {
-        const announcements = await Announcement.find({ active: true }, { _id: 0 })
+        const now = new Date();
+        const announcements = await Announcement.find({ 
+            active: true,
+            $or: [
+                // No date range specified (always show)
+                { startAt: { $exists: false }, endAt: { $exists: false } },
+                // Current date is within the specified range
+                { startAt: { $lte: now }, endAt: { $gte: now } }
+            ]
+        }, { _id: 0 })
         res.status(200).json(makeResponse('success', announcements, ['fetched all active announcements'], false))
     } catch (err) {
         res.status(500).json(makeError(["internal server error, please try again later or contact support"]))
