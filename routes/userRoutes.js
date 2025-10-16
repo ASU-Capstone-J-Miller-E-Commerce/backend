@@ -122,7 +122,7 @@ router.put('/toggleNotifications', authUser, async (req, res) =>
 
         await editedUser.save();
 
-        return res.status(200).json(makeResponse('success', false, ['Updated your notifiation preferences!aaa'], false));
+        return res.status(200).json(makeResponse('success', false, ['Updated your notifiation preferences!'], false));
 
     }catch(ex)
     {
