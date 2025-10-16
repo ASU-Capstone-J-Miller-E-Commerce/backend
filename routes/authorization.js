@@ -135,8 +135,8 @@ router.post('/login', async (req, res) =>
             res.cookie("jwt", token, 
                 {
                     httpOnly: true, //set to true in prod, false for browser testing.
-                    secure: false, //set to true when in prod
-                    sameSite: "Lax", //Set to "strict" for prod, Lax or None for testing and dev ONLY.
+                    secure: true, //set to true when in prod
+                    sameSite: "Strict", //Set to "strict" for prod, Lax or None for testing and dev ONLY.
                     maxAge: 86400 * 1000, // EXP in one day.
                 }
             );
@@ -155,8 +155,8 @@ router.post('/logout', (req, res) => {
         // clear the jwt cookie
         res.clearCookie('jwt', {
             httpOnly: true, //set to true in prod, false for browser testing.
-            secure: false, //set to true when in prod
-            sameSite: 'Lax', //Set to "strict" for prod, Lax or None for testing and dev ONLY.
+            secure: true, //set to true when in prod
+            sameSite: "Strict" //Set to "strict" for prod, Lax or None for testing and dev ONLY.
         });
 
         return res.status(200).json(makeResponse('success', false, ['Logout successful'], false));
@@ -358,8 +358,8 @@ router.put('/verify2FA', async (req, res) => {
             // Set the updated JWT cookie
             res.cookie("jwt", newToken, {
                 httpOnly: true,
-                secure: false, // set to true in production
-                sameSite: "Lax", // Set to "strict" for prod
+                secure: true, // set to true in production
+                sameSite: "Strict", // Set to "strict" for prod
                 maxAge: 86400 * 1000, // 1 day expiration
             });
             
@@ -412,8 +412,8 @@ router.post('/verify2FALogin', async (req, res) => {
             res.cookie("jwt", token, 
                 {
                     httpOnly: true, //set to true in prod, false for browser testing.
-                    secure: false, //set to true when in prod
-                    sameSite: "Lax", //Set to "strict" for prod, Lax or None for testing and dev ONLY.
+                    secure: true, //set to true when in prod
+                    sameSite: "Strict", //Set to "strict" for prod, Lax or None for testing and dev ONLY.
                     maxAge: 86400 * 1000, // EXP in one day.
                 }
             );
