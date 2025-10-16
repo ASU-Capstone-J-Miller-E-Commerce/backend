@@ -6,11 +6,10 @@ on:
         description: Git ref to deploy
         default: main
         required: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      BACKEND_DIR: ~/backend           # adjust if different
     steps:
       - name: Prep SSH known_hosts
         run: |
@@ -25,43 +24,23 @@ jobs:
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           port: ${{ secrets.DROPLET_SSH_PORT || 22 }}
-          debug: true
+          request_pty: true
+          script_stop: true
+          command_timeout: 30m
           script: |
-            set -e
-            echo "=== Current directory and git status ==="
+            set -euxo pipefail
+            : > ~/.hushlogin || true
+
+            command -v node >/dev/null || { echo "node not found"; exit 1; }
+            command -v npm  >/dev/null || { echo "npm not found";  exit 1; }
+            command -v pm2  >/dev/null || { echo "pm2 not found";  exit 1; }
+
             cd ~/backend
-            pwd
-            git status
-            git log --oneline -5
-            
-            echo "=== Stopping PM2 processes ==="
-            pm2 stop server || true
-            pm2 delete server || true
-            
-            echo "=== Fetching latest from origin ==="
-            git fetch origin
-            
-            echo "=== Force checkout and reset to specified ref ==="
-            git checkout ${{ github.event.inputs.ref || 'main' }}
+
+            git fetch origin ${{ github.event.inputs.ref || 'main' }}
             git reset --hard origin/${{ github.event.inputs.ref || 'main' }}
-            
-            echo "=== Clearing all caches and build artifacts ==="
-            rm -rf node_modules
-            rm -rf dist
-            rm -rf build
-            npm cache clean --force
-            
-            echo "=== Fresh install of dependencies ==="
+            echo "DEPLOY COMMIT: $(git rev-parse --short HEAD)"
+
             npm ci
-            
-            echo "=== Starting PM2 server ==="
-            pm2 start ecosystem.config.js --only server || pm2 start npm --name server -- run start
+            pm2 restart server || pm2 start ecosystem.config.js --only server || pm2 start npm --name server -- run start
             pm2 save
-            
-            echo "=== PM2 status ==="
-            pm2 status
-            pm2 logs server --lines 10 --nostream
-            
-            echo "=== Deployment completed ==="
-            git log --oneline -1
-            echo "Deployed commit: $(git rev-parse HEAD)"
