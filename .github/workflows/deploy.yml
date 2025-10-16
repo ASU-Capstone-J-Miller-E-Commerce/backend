@@ -1,0 +1,12 @@
+name: Deploy Backend (dispatch)
+on:
+  repository_dispatch:
+    types: [deploy]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.client_payload.ref || 'main' }}
+      # then the same steps as your backend deploy above
