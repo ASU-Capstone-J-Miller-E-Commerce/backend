@@ -25,6 +25,7 @@ jobs:
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           port: ${{ secrets.DROPLET_SSH_PORT || 22 }}
+          debug: true
           script: |
             set -e
             echo "=== Current directory and git status ==="
