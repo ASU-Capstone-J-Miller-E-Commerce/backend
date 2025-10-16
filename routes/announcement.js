@@ -17,10 +17,20 @@ router.get('/', async (req, res, next) => {
         const announcements = await Announcement.find({ 
             active: true,
             $or: [
-                // No date range specified (always show)
-                { startAt: { $exists: false }, endAt: { $exists: false } },
+                // No date range specified (null values or fields don't exist)
+                { 
+                    $and: [
+                        { $or: [{ startAt: { $exists: false } }, { startAt: null }] },
+                        { $or: [{ endAt: { $exists: false } }, { endAt: null }] }
+                    ]
+                },
                 // Current date is within the specified range
-                { startAt: { $lte: now }, endAt: { $gte: now } }
+                { 
+                    startAt: { $lte: now }, 
+                    endAt: { $gte: now },
+                    startAt: { $ne: null },
+                    endAt: { $ne: null }
+                }
             ]
         }, { _id: 0 })
         res.status(200).json(makeResponse('success', announcements, ['fetched all active announcements'], false))
