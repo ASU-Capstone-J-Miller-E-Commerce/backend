@@ -6,15 +6,17 @@ on:
         description: Git ref to deploy
         default: main
         required: true
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      BACKEND_DIR: ~/backend                  # change if your path differs
+      BACKEND_DIR: ~/backend           # adjust if different
     steps:
-      - name: Add droplet to known_hosts
-        run: ssh-keyscan -p "${{ secrets.DROPLET_SSH_PORT || 22 }}" "${{ secrets.DROPLET_HOST }}" >> ~/.ssh/known_hosts
+      - name: Prep SSH known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan -p "${{ secrets.DROPLET_SSH_PORT || 22 }}" "${{ secrets.DROPLET_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.0.3
