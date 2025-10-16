@@ -27,7 +27,7 @@ jobs:
           port: ${{ secrets.DROPLET_SSH_PORT || 22 }}
           script: |
             set -e
-            cd "$BACKEND_DIR"
+            cd ~/backend
             git pull
             npm ci
             pm2 restart server || pm2 start ecosystem.config.js --only api
