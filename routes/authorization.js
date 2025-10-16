@@ -135,7 +135,7 @@ router.post('/login', async (req, res) =>
             res.cookie("jwt", token, 
                 {
                     httpOnly: true, //set to true in prod, false for browser testing.
-                    secure: true, //set to true when in prod
+                    secure: false, //set to true when in prod
                     sameSite: "Strict", //Set to "strict" for prod, Lax or None for testing and dev ONLY.
                     maxAge: 86400 * 1000, // EXP in one day.
                 }
@@ -155,7 +155,7 @@ router.post('/logout', (req, res) => {
         // clear the jwt cookie
         res.clearCookie('jwt', {
             httpOnly: true, //set to true in prod, false for browser testing.
-            secure: true, //set to true when in prod
+            secure: false, //set to true when in prod
             sameSite: "Strict" //Set to "strict" for prod, Lax or None for testing and dev ONLY.
         });
 
@@ -358,7 +358,7 @@ router.put('/verify2FA', async (req, res) => {
             // Set the updated JWT cookie
             res.cookie("jwt", newToken, {
                 httpOnly: true,
-                secure: true, // set to true in production
+                secure: false, // set to true in production
                 sameSite: "Strict", // Set to "strict" for prod
                 maxAge: 86400 * 1000, // 1 day expiration
             });
@@ -412,7 +412,7 @@ router.post('/verify2FALogin', async (req, res) => {
             res.cookie("jwt", token, 
                 {
                     httpOnly: true, //set to true in prod, false for browser testing.
-                    secure: true, //set to true when in prod
+                    secure: false, //set to true when in prod
                     sameSite: "Strict", //Set to "strict" for prod, Lax or None for testing and dev ONLY.
                     maxAge: 86400 * 1000, // EXP in one day.
                 }
