@@ -30,5 +30,5 @@ jobs:
             cd ~/backend
             git pull
             npm ci
-            pm2 restart server || pm2 start ecosystem.config.js --only api
+            pm2 restart server || pm2 start ecosystem.config.js --only server || pm2 start npm --name server -- run start
             pm2 save
