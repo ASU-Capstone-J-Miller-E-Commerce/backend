@@ -3,6 +3,8 @@ const Analytic = require('../../models/analytic')
 const { makeError, makeResponse } = require('../../response/makeResponse');
 const router = express.Router()
 const { authUser , authAdmin } = require('../authorization')
+const Wood = require('../../models/wood')
+const Crystal = require('../../models/crystal')
 
 router.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", process.env.ORIGIN_URL) // update to match the domain you will make the request from
@@ -14,8 +16,13 @@ router.use(function(req, res, next) {
 //get all
 router.get('/', authAdmin, async (req, res, next) => {
     try {
-        const analytics = await Analytic.find()
-        res.status(200).json(makeResponse('success', analytics, ['fetched all analytics from database'], false))
+        const woods = await Wood.find({}, {commonName: 1, clicks: 1, _id: 0})
+        const crystals = await Crystal.find({}, {crystalName: 1, clicks: 1, _id: 0})
+        const analytics = { 
+            woods: woods.map(item => ({name: item.commonName, clicks: item.clicks || 0})), 
+            crystals: crystals.map(item => ({name: item.crystalName, clicks: item.clicks || 0})) 
+        }
+        res.status(200).json(makeResponse('success', analytics, ['Fetched Analytics from database.'], false))
     } catch (err) {
         res.status(500).json(makeError([err.message]))
     }
@@ -42,6 +49,64 @@ router.post('/', async (req, res, next) => {
     } catch (err) {
         res.status(400).json(makeError([err.message]))
     }
+})
+
+//Wood Analytics Get
+//Not yet implemented.
+router.get('/wood/clicks', async (req, res) => {
+    const { timeframe } = req.query
+    const now = new Date()
+    let since
+
+    //Create window for respective timeframe.
+    switch(timeframe)
+    {
+        case '1d': since = new Date(now.setDate(now.getDate() - 1)); break;
+        case '7d': since = new Date(now.setDate(now.getDate() - 7)); break;
+        case '1m': since = new Date(now.setMonth(now.getMonth() - 1)); break;
+        default: since = new Date(0);   //No query , this will return all time.
+    }
+
+    const woods = await Wood.find().select('name clickHistory')
+
+    const clickMap = woods.map(w => {
+        const totalClicks = (w.clickHistory || []).reduce((sum, entry) => 
+        {
+            if(new Date(entry.date) >= since) sum += entry.clicks
+            return sum
+        }, 0)
+        return { name: w.name, totalClicks}
+    })
+    res.status(200).json(makeResponse('success', clickMap, ['Fetched all clicks for wood in the timeframe.'], false))
+})
+
+//Crystal Analytics Get
+//Not yet implemented
+router.get('/crystal/clicks', async (req, res) => {
+    const { timeframe } = req.query
+    const now = new Date()
+    let since
+
+    //Create window for respective timeframe.
+    switch(timeframe)
+    {
+        case '1d': since = new Date(now.setDate(now.getDate() - 1)); break;
+        case '7d': since = new Date(now.setDate(now.getDate() - 7)); break;
+        case '1m': since = new Date(now.setMonth(now.getMonth() - 1)); break;
+        default: since = new Date(0);   //No query , this will return all time.
+    }
+
+    const crystals = await Crystal.find().select('name clickHistory')
+
+    const clickMap = crystals.map(w => {
+        const totalClicks = (w.clickHistory || []).reduce((sum, entry) => 
+        {
+            if(new Date(entry.date) >= since) sum += entry.clicks
+            return sum
+        }, 0)
+        return { name: w.name, totalClicks}
+    })
+    res.status(200).json(makeResponse('success', clickMap, ['Fetched all clicks for crystals in the timeframe.'], false))
 })
 
 async function getAnalytic(req, res, next) {

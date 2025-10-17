@@ -43,6 +43,15 @@ const crystalSchema = new mongoose.Schema({
         type: [String],
         required: false
     },
+    clicks: {
+        type: Number,
+        required: true
+    },
+    clickHistory: {
+        type: Map,
+        of: Number,
+        default: {}
+    }
 })
 
 module.exports = mongoose.model('crystal', crystalSchema)
