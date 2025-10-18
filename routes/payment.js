@@ -66,9 +66,9 @@ router.post('/create-checkout-session', authUser, getCartItems, async (req, res)
             billing_address_collection: 'required', // Still collect billing for payment
             line_items: line_items,
             mode: 'payment',
-            success_url: `${process.env.ORIGIN_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${process.env.ORIGIN_URL}/checkout/cancel`,
-            
+            success_url: `${getOriginUrl()}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${getOriginUrl()}/checkout/cancel`,
+
             // Additional customization options
             locale: 'auto', // Auto-detect customer's language
             payment_method_types: ['card'], // Accept only cards
