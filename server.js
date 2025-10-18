@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const { getOriginUrl, getPort, isProduction, isDevelopment } = require('./utils/environment');
 
 // Initialize app
 const app = express();
@@ -19,9 +20,7 @@ app.use(cookieParser());
 app.use(cors({
   origin: function (origin, callback) {
     const allowedOrigins = [
-      'http://165.22.154.216',
-      'https://165.22.154.216',
-      "http://localhost:3000"
+      getOriginUrl(), // Use environment-based URL
     ];
     
     // Allow no-origin (server-to-server, mobile apps, etc.) and specific origins
@@ -35,24 +34,27 @@ app.use(cors({
   credentials: true  // Enable credentials for all allowed origins
 }));
 
-// log all requests for debugging purposes
-app.use((req, res, next) => {
-  console.log(`Request: ${req.method} ${req.url}`);
-  console.log('Request Headers:', req.headers);
-  console.log('Request Body:', req.body);
+// Conditional logging - only in development
+if (isDevelopment()) {
+  // log all requests for debugging purposes
+  app.use((req, res, next) => {
+    console.log(`Request: ${req.method} ${req.url}`);
+    console.log('Request Headers:', req.headers);
+    console.log('Request Body:', req.body);
 
-  // capture the original send method
-  const originalSend = res.send;
+    // capture the original send method
+    const originalSend = res.send;
 
-  // override the send method to log the response
-  res.send = function (body) {
-    console.log('Response Status:', res.statusCode);
-    console.log('Response Body:', body);
-    originalSend.call(this, body);
-  };
+    // override the send method to log the response
+    res.send = function (body) {
+      console.log('Response Status:', res.statusCode);
+      console.log('Response Body:', body);
+      originalSend.call(this, body);
+    };
 
-  next();
-});
+    next();
+  });
+}
 
 // Connect to MongoDB
 mongoose.connect(process.env.DATABASE_URL, {
@@ -129,8 +131,19 @@ app.get('/', (req, res) => {
   res.send('Hello World');
 });
 
-// Start the server
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, "127.0.0.1", () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Start the server with environment-based configuration
+const PORT = getPort();
+
+if (isProduction()) {
+  // Production: bind to all interfaces
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on 0.0.0.0:${PORT} in ${process.env.NODE_ENV} mode`);
+    console.log(`Frontend origin: ${getOriginUrl()}`);
+  });
+} else {
+  // Development: no host binding (defaults to all interfaces)
+  app.listen(PORT, () => {
+    console.log(`Server running on localhost:${PORT} in ${process.env.NODE_ENV} mode`);
+    console.log(`Frontend origin: ${getOriginUrl()}`);
+  });
+}
