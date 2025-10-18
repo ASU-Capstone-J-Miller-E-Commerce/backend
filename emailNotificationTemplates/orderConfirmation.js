@@ -1,5 +1,7 @@
+const { getOriginUrl } = require('../utils/environment');
+
 const orderConfirmationTemplate = (orderNumber) => {
-  const originUrl = process.env.ORIGIN_URL;
+  const originUrl = getOriginUrl();
   return `
     <!DOCTYPE html>
     <html>

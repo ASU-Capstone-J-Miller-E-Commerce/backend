@@ -4,10 +4,11 @@ const Accessory = require('../models/accessory')
 const Wood = require('../models/wood')
 const Crystal = require('../models/crystal')
 const { makeError, makeResponse } = require('../response/makeResponse');
+const { getOriginUrl } = require('../utils/environment');
 const router = express.Router()
 
 router.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", process.env.ORIGIN_URL) // update to match the domain you will make the request from
+    res.header("Access-Control-Allow-Origin", getOriginUrl()) // Use environment function
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE')
     res.setHeader("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, methods, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers")
     next()
