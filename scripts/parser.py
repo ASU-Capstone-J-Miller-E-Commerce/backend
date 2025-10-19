@@ -44,8 +44,8 @@ print(f"Environment: {node_env}")
 print(f"Database: {db_name}")
 
 #DO Credentials from .env
-DO_SPACES_KEY = os.getenv("DO_SPACES_KEY")
-DO_SPACES_SECRET = os.getenv("DO_SPACES_SECRET")
+DIGITAL_OCEAN_ADMIN_ID = os.getenv("DIGITAL_OCEAN_ADMIN_ID")
+DIGITAL_OCEAN_ADMIN_KEY = os.getenv("DIGITAL_OCEAN_ADMIN_KEY")
 DO_SPACE_NAME = os.getenv("DO_SPACE_NAME")
 DO_ENDPOINT = os.getenv("DO_ENDPOINT")
 DO_FULL_URL_PRE = os.getenv("DO_FULL_URL_PRE")
@@ -284,8 +284,8 @@ if(DO_CONNECT):
         client = session.client('s3',
                                 region_name = 'nyc3',
                                 endpoint_url = DO_ENDPOINT,
-                                aws_access_key_id=DO_SPACES_KEY,
-                                aws_secret_access_key=DO_SPACES_SECRET)
+                                aws_access_key_id=DIGITAL_OCEAN_ADMIN_ID,
+                                aws_secret_access_key=DIGITAL_OCEAN_ADMIN_KEY)
         print('Connected.')
 
         res = client.list_objects_v2(Bucket=DO_SPACE_NAME, Prefix=imageServerURL)
@@ -309,8 +309,8 @@ if(DO_CONNECT):
     client = session.client('s3',
                             region_name = 'nyc3',
                             endpoint_url = DO_ENDPOINT,
-                            aws_access_key_id=DO_SPACES_KEY,
-                            aws_secret_access_key=DO_SPACES_SECRET)
+                            aws_access_key_id=DIGITAL_OCEAN_ADMIN_ID,
+                            aws_secret_access_key=DIGITAL_OCEAN_ADMIN_KEY)
     print('Connected.')
     for file_path, file_url in image_arr:
         key = file_url
