@@ -39,6 +39,7 @@ jobs:
 
             git fetch origin ${{ github.event.inputs.ref || 'main' }}
             git reset --hard origin/${{ github.event.inputs.ref || 'main' }}
+            git pull origin ${{ github.event.inputs.ref || 'main' }}
             echo "DEPLOY COMMIT: $(git rev-parse --short HEAD)"
 
             npm ci
