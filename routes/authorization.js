@@ -108,7 +108,7 @@ router.post('/login', async (req, res) =>
             //2FA enabled. Require 2FA for token signing.
             //Encrypt token data so frontend cannot see / inject data.
             const iv = crypto.randomBytes(16);
-            const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENC_KEY), iv);
+            const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENC_KEY, 'hex'), iv);
             let encRole = cipher.update(login.role, 'utf8', 'hex');
             encRole += cipher.final('hex');
 
@@ -394,7 +394,7 @@ router.post('/verify2FALogin', async (req, res) => {
         }
         encRole = token_data.role;
 
-        const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENC_KEY), Buffer.from(iv, 'hex'));
+        const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENC_KEY, 'hex'), Buffer.from(iv, 'hex'));
         let decryptedRole = decipher.update(encRole, 'hex', 'utf8');
         decryptedRole += decipher.final('utf8');
 
