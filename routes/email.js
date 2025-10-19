@@ -22,26 +22,6 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// function to send emails
-async function sendEmail(to, subject, text, html) {
-  const mailOptions = {
-    from: `"Admin" <${process.env.EMAIL_USER}>`,
-    to,
-    subject,
-    text,
-    html
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Email sent:", info.messageId);
-    return info;
-  } catch (error) {
-    console.error("Error sending email:", error);
-    throw error;
-  }
-}
-
 // Account creation email function
 async function sendAccountCreationEmail({ email, firstName }) {
   try {

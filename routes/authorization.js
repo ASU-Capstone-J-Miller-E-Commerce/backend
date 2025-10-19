@@ -71,12 +71,8 @@ router.post('/register', async (req, res) =>
         await newUser.save();
 
         // Send account creation email
-        try {
-            await sendAccountCreationEmail({ email, firstName: fName });
-        } catch (emailError) {
-            console.error('Failed to send account creation email:', emailError);
-            // Don't fail registration if email fails
-        }
+        sendAccountCreationEmail({ email, firstName: fName })
+            .catch(err => console.error('Failed to send account creation email:', err));
 
         res.status(201).json(makeResponse('success', false, ['You have registered successfully!'], false));
     }catch (ex){
