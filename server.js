@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const { getOriginUrl, getPort, isProduction, isDevelopment } = require('./utils/environment');
+const { getOriginUrl, getPort, isProduction, isDevelopment, getDatabaseUrl } = require('./utils/environment');
 
 // Initialize app
 const app = express();
@@ -57,7 +57,7 @@ if (isDevelopment()) {
 }
 
 // Connect to MongoDB
-mongoose.connect(process.env.DATABASE_URL, {
+mongoose.connect(getDatabaseUrl(), {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => {

@@ -8,12 +8,18 @@ const getPort = () => {
     return isProduction ? (process.env.PORT || 4000) : (process.env.DEV_PORT || 4500);
 };
 
+const getDatabaseUrl = () => {
+    const isProduction = process.env.NODE_ENV === 'production';
+    return isProduction ? process.env.PROD_DATABASE_URL : process.env.DEV_DATABASE_URL;
+};
+
 const isProduction = () => process.env.NODE_ENV === 'production';
 const isDevelopment = () => process.env.NODE_ENV === 'development';
 
 module.exports = {
     getOriginUrl,
     getPort,
+    getDatabaseUrl,
     isProduction,
     isDevelopment
 };

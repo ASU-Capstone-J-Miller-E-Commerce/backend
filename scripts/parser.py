@@ -26,8 +26,23 @@ CLEAR_DB_FLAG = True                        #Set to false if you do not wish to 
 #Load ENV variables.
 env_path= Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
-mongo_url = os.getenv("DATABASE_URL")
-client_name = os.getenv("CLIENT_NAME")
+
+# Get environment-based database URL
+node_env = os.getenv("NODE_ENV", "development")
+if node_env == "production":
+    mongo_url = os.getenv("PROD_DATABASE_URL")
+else:
+    mongo_url = os.getenv("DEV_DATABASE_URL")
+
+# Extract database name from URL
+if mongo_url:
+    db_name = mongo_url.split('/')[-1].split('?')[0]
+else:
+    db_name = 'dev'  # fallback
+
+print(f"Environment: {node_env}")
+print(f"Database: {db_name}")
+
 #DO Credentials from .env
 DO_SPACES_KEY = os.getenv("DO_SPACES_KEY")
 DO_SPACES_SECRET = os.getenv("DO_SPACES_SECRET")
@@ -253,11 +268,11 @@ if(DO_CONNECT):
     print('Parsing Complete. Establishing Connection:')
 
     client = MongoClient(mongo_url)
-    db = client[client_name]
+    db = client[db_name]  # Use extracted database name
     crystal_collection = db['crystals']
     wood_collection = db['woods']
 
-    print('Connection Established.')
+    print(f'Connection Established to database: {db_name}')
 
     if(CLEAR_DB_FLAG):
         print('Clear DB flag is set. Please cancel now if you do not wish to clear the current database. [ CTRL + C ]')
@@ -306,7 +321,6 @@ if(DO_CONNECT):
         )
         print(f"Uploaded {file_path.name} to {file_url}")
 
-
     print('Uploading Crystals . . .')
     for crystalVar in crystal_arr:
         crystal_collection.insert_one(crystalVar)
@@ -318,5 +332,13 @@ if(DO_CONNECT):
     print('Complete!')
 
     print('All uploads are complete! Check collection For confirmation.')
+
+    # Add verification
+    print(f"Environment: {node_env}")
+    print(f"Database name: {db_name}")
+    print(f"Crystals count in DB: {crystal_collection.count_documents({})}")
+    print(f"Woods count in DB: {wood_collection.count_documents({})}")
+    print(f"Crystals uploaded: {len(crystal_arr)}")
+    print(f"Woods uploaded: {len(wood_arr)}")
 else:
     print('Connections not enabled. Parser Run is complete.')
