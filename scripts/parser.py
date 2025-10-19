@@ -56,7 +56,8 @@ crystals_path = base_dir + '/excelDocs/crystals.xlsx'   #Replace with your path 
 woods_path = base_dir + '/excelDocs/woods.xlsx'         #Replace with your path if manual.
 crystals_image_dir = base_dir + '/images/Crystals'
 woods_image_dir = base_dir + '/images/Woods'
-imageServerURL = 'images/materials/'
+env_folder = 'prod' if node_env == 'production' else 'dev'
+imageServerURL = f'{env_folder}/images/materials/'
 
 #Load excel files for crystals and woods
 crystals = pd.ExcelFile(crystals_path)
