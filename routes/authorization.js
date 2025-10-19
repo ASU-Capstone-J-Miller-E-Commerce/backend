@@ -10,6 +10,7 @@ const router = express.Router()
 const { sendAccountCreationEmail } = require('./email')
 const { makeData } = require('../response/makeResponse')
 const { makeError, makeResponse } = require('../response/makeResponse')
+const { getCookieOptions } = require('../utils/environment')
 const nodemailer = require("nodemailer");
 const speakeasy = require("speakeasy")
 const qrcode = require("qrcode")
@@ -137,14 +138,7 @@ router.post('/login', async (req, res) =>
             };
 
             const token = jwt.sign(token_payload, jwtSecret, { expiresIn: '1d'}); //EXP in one day.
-            res.cookie("jwt", token, 
-                {
-                    httpOnly: true, //set to true in prod, false for browser testing.
-                    secure: false, //set to true when in prod
-                    sameSite: "Strict", //Set to "strict" for prod, Lax or None for testing and dev ONLY.
-                    maxAge: 86400 * 1000, // EXP in one day.
-                }
-            );
+            res.cookie("jwt", token, getCookieOptions());
             return res.status(201).json(makeResponse('success', token, ['Login Successful.'], false));
         }
         
@@ -158,11 +152,7 @@ router.post('/login', async (req, res) =>
 router.post('/logout', (req, res) => {
     try {
         // clear the jwt cookie
-        res.clearCookie('jwt', {
-            httpOnly: true, //set to true in prod, false for browser testing.
-            secure: false, //set to true when in prod
-            sameSite: "Strict" //Set to "strict" for prod, Lax or None for testing and dev ONLY.
-        });
+        res.clearCookie('jwt', getCookieOptions());
 
         return res.status(200).json(makeResponse('success', false, ['Logout successful'], false));
     } catch (ex) {
@@ -360,13 +350,8 @@ router.put('/verify2FA', async (req, res) => {
             
             const newToken = jwt.sign(token_payload, jwtSecret, { expiresIn: '1d' });
             
-            // Set the updated JWT cookie
-            res.cookie("jwt", newToken, {
-                httpOnly: true,
-                secure: false, // set to true in production
-                sameSite: "Strict", // Set to "strict" for prod
-                maxAge: 86400 * 1000, // 1 day expiration
-            });
+            // Set the updated JWT cookie using centralized config
+            res.cookie("jwt", newToken, getCookieOptions());
             
             res.status(200).json(makeResponse('success', false, ['Two factor authentication setup complete.'], false));
         }
@@ -414,14 +399,7 @@ router.post('/verify2FALogin', async (req, res) => {
 
         if(verified){
             const token = jwt.sign(token_data, jwtSecret, { expiresIn: '1d'}); //EXP in one day.
-            res.cookie("jwt", token, 
-                {
-                    httpOnly: true, //set to true in prod, false for browser testing.
-                    secure: false, //set to true when in prod
-                    sameSite: "Strict", //Set to "strict" for prod, Lax or None for testing and dev ONLY.
-                    maxAge: 86400 * 1000, // EXP in one day.
-                }
-            );
+            res.cookie("jwt", token, getCookieOptions());
             return res.status(201).json(makeResponse('success', token, ['Login Successful.'], false));
         }
         else{

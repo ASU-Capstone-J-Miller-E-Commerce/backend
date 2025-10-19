@@ -13,6 +13,16 @@ const getDatabaseUrl = () => {
     return isProduction ? process.env.PROD_DATABASE_URL : process.env.DEV_DATABASE_URL;
 };
 
+const getCookieOptions = () => {
+    const isProd = process.env.NODE_ENV === 'production';
+    return {
+        httpOnly: true,
+        secure: isProd, // true in production, false in development
+        sameSite: isProd ? "Lax" : "Lax", // Strict in production, Lax in development
+        maxAge: 2 * (86400 * 1000), // 2 day expiration
+    };
+};
+
 const isProduction = () => process.env.NODE_ENV === 'production';
 const isDevelopment = () => process.env.NODE_ENV === 'development';
 
@@ -20,6 +30,7 @@ module.exports = {
     getOriginUrl,
     getPort,
     getDatabaseUrl,
+    getCookieOptions,
     isProduction,
     isDevelopment
 };
