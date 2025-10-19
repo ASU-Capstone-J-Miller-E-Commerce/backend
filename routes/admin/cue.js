@@ -3,8 +3,8 @@ const Cue = require('../../models/cue')
 const { makeError, makeResponse } = require('../../response/makeResponse');
 const router = express.Router()
 const { authUser, authAdmin } = require('../authorization');
-const { getOriginUrl } = require('../../utils/environment');
-const stripe = require('stripe')(process.env.STRIPE_KEY);
+const { getOriginUrl, getStripeKey } = require('../../utils/environment');
+const stripe = require('stripe')(getStripeKey());
 
 router.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", getOriginUrl()) // update to match the domain you will make the request from

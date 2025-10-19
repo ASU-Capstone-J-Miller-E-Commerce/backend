@@ -1,11 +1,12 @@
-const stripe = require('stripe')(process.env.STRIPE_KEY);
 const express = require('express')
 const router = express.Router()
 const Cue = require('../models/cue')
 const Accessory = require('../models/accessory')
 const { makeError, makeResponse, makeData } = require('../response/makeResponse')
 const { authUser } = require('./authorization')
-const { sendOrderConfirmationEmail } = require('./email')
+const { sendOrderConfirmationEmail } = require('./email');
+const { getStripeKey } = require('../utils/environment');
+const stripe = require('stripe')(getStripeKey());
 
 
 router.post('/create-checkout-session', authUser, getCartItems, async (req, res) => {

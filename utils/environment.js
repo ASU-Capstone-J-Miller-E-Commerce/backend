@@ -13,6 +13,11 @@ const getDatabaseUrl = () => {
     return isProduction ? process.env.PROD_DATABASE_URL : process.env.DEV_DATABASE_URL;
 };
 
+const getStripeKey = () => {
+    const isProduction = process.env.NODE_ENV === 'production';
+    return isProduction ? process.env.PROD_STRIPE_KEY : process.env.DEV_STRIPE_KEY;
+};
+
 const getCookieOptions = () => {
     const isProd = process.env.NODE_ENV === 'production';
     return {
@@ -30,6 +35,7 @@ module.exports = {
     getOriginUrl,
     getPort,
     getDatabaseUrl,
+    getStripeKey,
     getCookieOptions,
     isProduction,
     isDevelopment

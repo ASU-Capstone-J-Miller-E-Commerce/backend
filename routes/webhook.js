@@ -1,6 +1,6 @@
-
-const stripe = require('stripe')(process.env.STRIPE_KEY);
 const express = require('express');
+const { getStripeKey } = require('../utils/environment');
+const stripe = require('stripe')(getStripeKey());
 const router = express.Router();
 
 // Only handle invoice.updated events
