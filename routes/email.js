@@ -14,16 +14,11 @@ const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
 const { authUser } = require('./authorization')
 
-const transporter = nodemailer.createTransporter({
-  host: "smtp.gmail.com",
-  port: 2525, // Try this port instead of 465/587
-  secure: false, // Use STARTTLS
+const transporter = nodemailer.createTransport({
+  service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS 
-  },
-  tls: {
-    ciphers: 'SSLv3'
   }
 });
 
