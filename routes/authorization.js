@@ -7,7 +7,7 @@ const user = require('../models/user')
 const Cue = require('../models/cue')
 const Accessory = require('../models/accessory')
 const router = express.Router()
-const { sendEmail } = require('../sendMail')
+const { sendAccountCreationEmail } = require('./email')
 const { makeData } = require('../response/makeResponse')
 const { makeError, makeResponse } = require('../response/makeResponse')
 const nodemailer = require("nodemailer");
@@ -70,9 +70,14 @@ router.post('/register', async (req, res) =>
         const newUser = new user( { email: email, password: passHash, firstName: fName, lastName: lName, role: "User", emailNotos: !!emailNotos });
         await newUser.save();
 
-        const accountEmailNotification = returnMessage(email)
+        // Send account creation email
+        try {
+            await sendAccountCreationEmail({ email, firstName: fName });
+        } catch (emailError) {
+            console.error('Failed to send account creation email:', emailError);
+            // Don't fail registration if email fails
+        }
 
-        sendEmail(email, "Account Created", accountEmailNotification);
         res.status(201).json(makeResponse('success', false, ['You have registered successfully!'], false));
     }catch (ex){
         console.error(ex);
