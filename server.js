@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const { getOriginUrl, getPort, isProduction, isDevelopment, getDatabaseUrl } = require('./utils/environment');
+const { getAllowedOrigins, getPort, isProduction, isDevelopment, getDatabaseUrl } = require('./utils/environment');
 
 // Initialize app
 const app = express();
@@ -19,9 +19,7 @@ app.use(cookieParser());
 // Replace all CORS configurations with this single one
 app.use(cors({
   origin: function (origin, callback) {
-    const allowedOrigins = [
-      getOriginUrl(), // Use environment-based URL
-    ];
+    const allowedOrigins = getAllowedOrigins();
     
     // Allow no-origin (server-to-server, mobile apps, etc.) and specific origins
     if (!origin || allowedOrigins.includes(origin)) {
@@ -138,12 +136,12 @@ if (isProduction()) {
   // Production: bind to all interfaces
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on 0.0.0.0:${PORT} in ${process.env.NODE_ENV} mode`);
-    console.log(`Frontend origin: ${getOriginUrl()}`);
+    console.log(`Allowed origins:`, getAllowedOrigins().join(', '));
   });
 } else {
   // Development: no host binding (defaults to all interfaces)
   app.listen(PORT, () => {
     console.log(`Server running on localhost:${PORT} in ${process.env.NODE_ENV} mode`);
-    console.log(`Frontend origin: ${getOriginUrl()}`);
+    console.log(`Allowed origins:`, getAllowedOrigins().join(', '));
   });
 }

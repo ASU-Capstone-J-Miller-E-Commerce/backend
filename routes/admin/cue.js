@@ -3,11 +3,15 @@ const Cue = require('../../models/cue')
 const { makeError, makeResponse } = require('../../response/makeResponse');
 const router = express.Router()
 const { authUser, authAdmin } = require('../authorization');
-const { getOriginUrl, getStripeKey } = require('../../utils/environment');
+const { getAllowedOrigins, getStripeKey } = require('../../utils/environment');
 const stripe = require('stripe')(getStripeKey());
 
-router.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", getOriginUrl()) // update to match the domain you will make the request from
+router.use(function (req, res, next) {
+    const allowedOrigins = getAllowedOrigins();
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+        res.header("Access-Control-Allow-Origin", origin);
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE')
     res.setHeader("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, methods, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers")
     next()

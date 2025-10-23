@@ -5,7 +5,7 @@ const Accessory = require('../models/accessory')
 const { makeError, makeResponse, makeData } = require('../response/makeResponse')
 const { authUser } = require('./authorization')
 const { sendOrderConfirmationEmail } = require('./email');
-const { getStripeKey, getOriginUrl } = require('../utils/environment');
+const { getStripeKey, getAllowedOrigins } = require('../utils/environment');
 const stripe = require('stripe')(getStripeKey());
 
 
@@ -61,14 +61,17 @@ router.post('/create-checkout-session', authUser, getCartItems, async (req, res)
         console.log('Shipping options for', req.body.shippingCountry, ':', shippingOptions);
         
         // If no shipping options are available, don't require shipping address
+        const allowedOrigins = getAllowedOrigins();
+        const originUrl = allowedOrigins[0]; // Use first allowed origin for redirects
+
         const sessionConfig = {
             customer_email: req.body.email,
             submit_type: 'pay',
             billing_address_collection: 'required', // Still collect billing for payment
             line_items: line_items,
             mode: 'payment',
-            success_url: `${getOriginUrl()}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${getOriginUrl()}/checkout/cancel`,
+            success_url: `${originUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${originUrl}/checkout/cancel`,
 
             // Additional customization options
             locale: 'auto', // Auto-detect customer's language

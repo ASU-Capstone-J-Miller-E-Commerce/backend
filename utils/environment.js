@@ -1,6 +1,11 @@
-const getOriginUrl = () => {
-    const isProduction = process.env.NODE_ENV === 'production';
-    return isProduction ? process.env.PROD_ORIGIN_URL : process.env.DEV_ORIGIN_URL;
+const getAllowedOrigins = () => {
+    if (isDevelopment()) {
+        return [process.env.DEV_ORIGIN_URL];
+    }
+    return [
+        'https://jmillercustomcues.com',
+        'https://www.jmillercustomcues.com'
+    ];
 };
 
 const getPort = () => {
@@ -32,7 +37,7 @@ const isProduction = () => process.env.NODE_ENV === 'production';
 const isDevelopment = () => process.env.NODE_ENV === 'development';
 
 module.exports = {
-    getOriginUrl,
+    getAllowedOrigins,
     getPort,
     getDatabaseUrl,
     getStripeKey,

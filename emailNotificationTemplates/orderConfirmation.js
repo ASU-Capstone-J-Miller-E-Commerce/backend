@@ -1,7 +1,7 @@
-const { getOriginUrl } = require('../utils/environment');
+const { getAllowedOrigins } = require('../utils/environment');
 
 const orderConfirmationTemplate = (orderNumber) => {
-  const originUrl = getOriginUrl();
+  const originUrl = getAllowedOrigins()[0];
   return `
     <!DOCTYPE html>
     <html>
