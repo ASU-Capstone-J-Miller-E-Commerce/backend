@@ -28,7 +28,7 @@ const getCookieOptions = () => {
     return {
         httpOnly: true,
         secure: isProd, // true in production, false in development
-        sameSite: isProd ? "Lax" : "Lax", // Strict in production, Lax in development
+        sameSite: isProd ? "Strict" : "Lax", // Strict in production, Lax in development
         maxAge: 2 * (86400 * 1000), // 2 day expiration
     };
 };
