@@ -23,6 +23,11 @@ const getStripeKey = () => {
     return isProduction ? process.env.PROD_STRIPE_KEY : process.env.DEV_STRIPE_KEY;
 };
 
+const getStripeWebhookSecret = () => {
+    const isProduction = process.env.NODE_ENV === 'production';
+    return isProduction ? process.env.PROD_STRIPE_WEBHOOK_SECRET : process.env.DEV_STRIPE_WEBHOOK_SECRET;
+};
+
 const getCookieOptions = () => {
     const isProd = process.env.NODE_ENV === 'production';
     return {
@@ -41,6 +46,7 @@ module.exports = {
     getPort,
     getDatabaseUrl,
     getStripeKey,
+    getStripeWebhookSecret,
     getCookieOptions,
     isProduction,
     isDevelopment
