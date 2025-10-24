@@ -26,7 +26,7 @@ const transporter = nodemailer.createTransport({
 // Account creation email function
 async function sendAccountCreationEmail({ email, firstName }) {
   try {
-    const subject = "Welcome to J.Miller Custom Cues!";
+    const subject = "Account Created - J.Miller Custom Cues";
     const htmlContent = accountCreationTemplate(firstName, email);
     const mailOptions = {
       from: `"J.Miller Custom Cues" <${process.env.EMAIL_USER}>`,
