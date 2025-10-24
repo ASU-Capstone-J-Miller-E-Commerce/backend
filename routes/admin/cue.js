@@ -49,7 +49,8 @@ router.post('/', authAdmin, async (req, res, next) => {
         const productData = {
             name: req.body.name,
             description: req.body.description && req.body.description.trim() !== '' ? req.body.description : undefined,
-            images: req.body.imageUrls
+            images: req.body.imageUrls,
+            shippable: true
         };
 
         // Only add price data if price is valid
