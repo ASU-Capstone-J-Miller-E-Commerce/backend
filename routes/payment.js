@@ -199,8 +199,6 @@ router.get('/verify-session/:session_id', authUser, async (req, res) => {
             // New order, process normally
             console.log('Creating new order for session:', req.params.session_id);
             
-            // ... existing order details preparation code ...
-            const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent);
             const cueGuids = session.metadata.cue_guids ? JSON.parse(session.metadata.cue_guids) : [];
             const accessoryItems = session.metadata.accessory_items ? JSON.parse(session.metadata.accessory_items) : [];
 
@@ -224,7 +222,7 @@ router.get('/verify-session/:session_id', authUser, async (req, res) => {
 
             const orderDetails = {
                 sessionId: session.id,
-                paymentIntentId: paymentIntent.id,
+                paymentIntentId: session.payment_intent || 'N/A', // Handle null payment_intent
                 status: 'paid',
                 amount: session.amount_total / 100,
                 currency: session.currency,
