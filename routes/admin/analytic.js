@@ -2,7 +2,6 @@ const express = require('express')
 const Analytic = require('../../models/analytic')
 const { makeError, makeResponse } = require('../../response/makeResponse');
 const router = express.Router()
-const { authUser , authAdmin } = require('../authorization')
 const Wood = require('../../models/wood')
 const Crystal = require('../../models/crystal')
 const { authUser , authAdmin } = require('../authorization');
