@@ -88,25 +88,17 @@ instock_map = {
     1: "Available"
 }
 
-color_map = {
-
-}
-
 #SCRIPT BEGIN 
 #Initialization 
 print("Loading Crystals Data . . .")
 for sheet_name in crystals.sheet_names:
     df = crystals.parse(sheet_name)
     crystalData[sheet_name] = df
-    #print("Found sheet: ")
-    #print(sheet_name)
 
 print("Loading Woods Data . . .")
 for sheet_name in woods.sheet_names:
     df = woods.parse(sheet_name)
     woodData[sheet_name] = df
-    #print("Found sheet: ")
-    #print(sheet_name)
 
 df1 = crystalData['Crystals by Category']
 df2 = woodData['Properties']
@@ -141,10 +133,12 @@ for _, row in df1.iterrows():
             ],
         "createdOn": datetime.now(),
         "updatedOn": datetime.now(),
+        "clicks": 0,
         #"imageUrls": row["Image"]
 
     }
     
+    #Seen is used here to ensure duplicate colors are not added again.
     seen = set()
     crystal["colors"] = [
         clean_color(tag) for tag in crystal["colors"] 
@@ -154,18 +148,16 @@ for _, row in df1.iterrows():
     crystal["psychologicalCorrespondence"] = [tag for tag in crystal["psychologicalCorrespondence"] if tag != ""]
 
     #CRYSTAL IMAGES
-    #print('BEGIN IMAGE FILE TESTING')
-    #print(crystal['crystalName'])
     crystal['imageUrls'] = []
     for folder_name in os.listdir(crystals_image_dir):
+        #Find folder path
         if(folder_name.strip() == crystal['crystalName'].strip()):
-            #print('Corresponding Folder found!')
             folder_path = os.path.join(crystals_image_dir, folder_name)
             if not os.path.isdir(folder_path):
-                continue
-            #print(folder_path)
+                continue    #Folder doesnt exist.
             folder_path = Path(folder_path)
             
+            #Attatch each image in the file to a new URL and attatch URLS to the crystal object.
             for image in folder_path.iterdir():
                 if image.is_file():
                     ext = image.suffix.lower()
@@ -175,8 +167,8 @@ for _, row in df1.iterrows():
                     image_arr.append((image, dest_path))
                     dest_path = DO_FULL_URL_PRE + dest_path
                     crystal['imageUrls'].append(dest_path)
-    #print('URLs associated with item:')
-    #print(crystal['imageUrls'])
+
+    #Attatch the crystal to the array.
     crystal_arr.append(crystal)
 
 print('Crystal Dataframe Completed.')
@@ -218,6 +210,7 @@ for _, row in df2.iterrows():
             ], 
         "createdOn": datetime.now(),
         "updatedOn": datetime.now(),
+        "clicks": 0,
         #"imageUrls": row["Image"]
         }
     
@@ -233,19 +226,16 @@ for _, row in df2.iterrows():
     if 'alternateName2' in wood and pd.isna(wood["alternateName2"]):
         del wood["alternateName2"]
 
-    #WOOD IMAGES
-    #print('BEGIN IMAGE FILE TESTING')
-    #print(wood['commonName'])
     wood['imageUrls'] = []
     for folder_name in os.listdir(woods_image_dir):
         if(folder_name.strip() == wood['commonName'].strip()):
-            #print('Corresponding Folder found!')
+            # Find folder
             folder_path = os.path.join(woods_image_dir, folder_name)
             if not os.path.isdir(folder_path):
-                continue
-            #print(folder_path)
+                continue    #Folder doesnt exist
             folder_path = Path(folder_path)
             
+            #Attatch each image in the file to a new URL and attatch URLS to the wood object.
             for image in folder_path.iterdir():
                 if image.is_file():
                     ext = image.suffix.lower()
@@ -255,9 +245,7 @@ for _, row in df2.iterrows():
                     image_arr.append((image, dest_path))
                     dest_path = DO_FULL_URL_PRE + dest_path
                     wood['imageUrls'].append(dest_path)
-    #print('URLs associated with item:')
-    
-    #print(wood['imageUrls'])
+    #Attatch to array. Same as crystals.
     wood_arr.append(wood)
 
 

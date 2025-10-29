@@ -30,7 +30,11 @@ router.get('/', async (req, res, next) => {
 // Get individual wood by GUID
 router.get('/wood/:guid', async (req, res, next) => {
     try {
-        const wood = await Wood.findOne({ guid: req.params.guid }).select('-_id')
+        const today = new Date().toISOString().slice(0, 10);
+        const wood = await Wood.findOneAndUpdate(
+            { guid: req.params.guid },
+            { $inc: { clicks: 1, [`clickHistory.${today}`]: 1 } },
+            {new: true, projection: '-_id'} )
         if (!wood) {
             return res.status(404).json(makeError(['Wood not found']))
         }
@@ -43,7 +47,11 @@ router.get('/wood/:guid', async (req, res, next) => {
 // Get individual crystal by GUID
 router.get('/crystal/:guid', async (req, res, next) => {
     try {
-        const crystal = await Crystal.findOne({ guid: req.params.guid }).select('-_id')
+        const today = new Date().toISOString().slice(0, 10);
+        const crystal = await Crystal.findOneAndUpdate(
+            { guid: req.params.guid },
+            { $inc: { clicks: 1, [`clickHistory.${today}`]: 1 } },
+            {new: true, projection: '-_id'} )
         if (!crystal) {
             return res.status(404).json(makeError(['Crystal not found']))
         }
