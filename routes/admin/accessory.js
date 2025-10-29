@@ -3,7 +3,7 @@ const Accessory = require('../../models/accessory')
 const { makeError, makeResponse } = require('../../response/makeResponse');
 const router = express.Router()
 const { authUser , authAdmin } = require('../authorization');
-const { getStripeKey } = require('../../utils/environment');
+const { getStripeKey, getAllowedOrigins } = require('../../utils/environment');
 const stripe = require('stripe')(getStripeKey());
 
 router.use(function (req, res, next) {
