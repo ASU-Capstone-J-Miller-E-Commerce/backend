@@ -2,16 +2,20 @@ const express = require('express')
 const Accessory = require('../../models/accessory')
 const { makeError, makeResponse } = require('../../response/makeResponse');
 const router = express.Router()
-const { authUser , authAdmin } = require('../authorization')
-const stripe = require('stripe')(process.env.STRIPE_KEY);
+const { authUser , authAdmin } = require('../authorization');
+const { getStripeKey } = require('../../utils/environment');
+const stripe = require('stripe')(getStripeKey());
 
-router.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", process.env.ORIGIN_URL) // update to match the domain you will make the request from
+router.use(function (req, res, next) {
+    const allowedOrigins = getAllowedOrigins();
+    const origin = req.headers.origin;
+    if (allowedOrigins.includes(origin)) {
+        res.header("Access-Control-Allow-Origin", origin);
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE')
     res.setHeader("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, methods, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers")
     next()
 });
-
 //get all
 router.get('/', authAdmin, async (req, res, next) => {
     try {
@@ -36,7 +40,8 @@ router.post('/', authAdmin, async (req, res, next) => {
         const productData = {
             name: req.body.name,
             description: req.body.description && req.body.description.trim() !== '' ? req.body.description : undefined,
-            images: req.body.imageUrls
+            images: req.body.imageUrls,
+            shippable: true
         };
 
         // Only add price data if price is valid

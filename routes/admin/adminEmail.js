@@ -10,10 +10,11 @@ const crypto = require('crypto');
 const { authUser , authAdmin } = require('../authorization')
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: 'in-v3.mailjet.com',
+  port: 2525,
   auth: {
-    user: process.env.EMAIL_USER, 
-    pass: process.env.EMAIL_PASS  
+    user: process.env.MJ_USER,
+    pass: process.env.MJ_PASS
   }
 });
 

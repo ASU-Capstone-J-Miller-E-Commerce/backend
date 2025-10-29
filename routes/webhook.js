@@ -1,12 +1,12 @@
-
-const stripe = require('stripe')(process.env.STRIPE_KEY);
 const express = require('express');
+const { getStripeKey, getStripeWebhookSecret } = require('../utils/environment');
+const stripe = require('stripe')(getStripeKey());
 const router = express.Router();
 
 // Only handle invoice.updated events
 router.post('/stripe', express.raw({type: 'application/json'}), async (req, res) => {
     const sig = req.headers['stripe-signature'];
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const webhookSecret = getStripeWebhookSecret();
     let event;
     try {
         event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);

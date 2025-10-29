@@ -3,8 +3,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-
-const allowedOrigins = ["http://104.248.176.217/"];
+const { getAllowedOrigins, getPort, isProduction, isDevelopment, getDatabaseUrl } = require('./utils/environment');
 
 // Initialize app
 const app = express();
@@ -17,50 +16,46 @@ app.use('/webhook', webhook);
 app.use(express.json());
 app.use(cookieParser());
 
+// Replace all CORS configurations with this single one
 app.use(cors({
-  origin: function (origin, cb) {
-    // allow no-origin (curl, server-to-server) and specific origins
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-    cb(new Error("Not allowed by CORS"));
+  origin: function (origin, callback) {
+    const allowedOrigins = getAllowedOrigins();
+    
+    // Allow no-origin (server-to-server, mobile apps, etc.) and specific origins
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error("Not allowed by CORS"));
   },
-
-  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
-  allowedHeaders: ["Content-Type","Authorization"]
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true  // Enable credentials for all allowed origins
 }));
 
+// Conditional logging - only in development
+if (isDevelopment()) {
+  // log all requests for debugging purposes
+  app.use((req, res, next) => {
+    console.log(`Request: ${req.method} ${req.url}`);
+    console.log('Request Headers:', req.headers);
+    console.log('Request Body:', req.body);
 
-app.use(cors({
-  origin: 'http://localhost:3000',  //Update for production and if your domain is different for testing.
-  credentials: true                 //Needed to store and send cookies.
-}));
+    // capture the original send method
+    const originalSend = res.send;
 
-app.options('*', cors({
-  origin: 'http://localhost:3000',
-  credentials: true
-}));
+    // override the send method to log the response
+    res.send = function (body) {
+      console.log('Response Status:', res.statusCode);
+      console.log('Response Body:', body);
+      originalSend.call(this, body);
+    };
 
-
-// log all requests for debugging purposes
-app.use((req, res, next) => {
-  console.log(`Request: ${req.method} ${req.url}`);
-  console.log('Request Headers:', req.headers);
-  console.log('Request Body:', req.body);
-
-  // capture the original send method
-  const originalSend = res.send;
-
-  // override the send method to log the response
-  res.send = function (body) {
-    console.log('Response Status:', res.statusCode);
-    console.log('Response Body:', body);
-    originalSend.call(this, body);
-  };
-
-  next();
-});
+    next();
+  });
+}
 
 // Connect to MongoDB
-mongoose.connect(process.env.DATABASE_URL, {
+mongoose.connect(getDatabaseUrl(), {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(() => {
@@ -134,8 +129,19 @@ app.get('/', (req, res) => {
   res.send('Hello World');
 });
 
-// Start the server
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, "127.0.0.1", () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Start the server with environment-based configuration
+const PORT = getPort();
+
+if (isProduction()) {
+  // Production: bind to all interfaces
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on 0.0.0.0:${PORT} in ${process.env.NODE_ENV} mode`);
+    console.log(`Allowed origins:`, getAllowedOrigins().join(', '));
+  });
+} else {
+  // Development: no host binding (defaults to all interfaces)
+  app.listen(PORT, () => {
+    console.log(`Server running on localhost:${PORT} in ${process.env.NODE_ENV} mode`);
+    console.log(`Allowed origins:`, getAllowedOrigins().join(', '));
+  });
+}

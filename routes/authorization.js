@@ -7,7 +7,7 @@ const user = require('../models/user')
 const Cue = require('../models/cue')
 const Accessory = require('../models/accessory')
 const router = express.Router()
-const { sendEmail } = require('../sendMail')
+const { sendAccountCreationEmail } = require('./email')
 const { makeData } = require('../response/makeResponse')
 const { makeError, makeResponse } = require('../response/makeResponse')
 const nodemailer = require("nodemailer");
@@ -70,9 +70,10 @@ router.post('/register', async (req, res) =>
         const newUser = new user( { email: email, password: passHash, firstName: fName, lastName: lName, role: "User", emailNotos: !!emailNotos });
         await newUser.save();
 
-        const accountEmailNotification = returnMessage(email)
+        // Send account creation email
+        sendAccountCreationEmail({ email, firstName: fName })
+            .catch(err => console.error('Failed to send account creation email:', err));
 
-        sendEmail(email, "Account Created", accountEmailNotification);
         res.status(201).json(makeResponse('success', false, ['You have registered successfully!'], false));
     }catch (ex){
         console.error(ex);
@@ -107,7 +108,7 @@ router.post('/login', async (req, res) =>
             //2FA enabled. Require 2FA for token signing.
             //Encrypt token data so frontend cannot see / inject data.
             const iv = crypto.randomBytes(16);
-            const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENC_KEY), iv);
+            const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENC_KEY, 'hex'), iv);
             let encRole = cipher.update(login.role, 'utf8', 'hex');
             encRole += cipher.final('hex');
 
@@ -136,7 +137,7 @@ router.post('/login', async (req, res) =>
                 {
                     httpOnly: true, //set to true in prod, false for browser testing.
                     secure: false, //set to true when in prod
-                    sameSite: "Lax", //Set to "strict" for prod, Lax or None for testing and dev ONLY.
+                    sameSite: "Strict", //Set to "strict" for prod, Lax or None for testing and dev ONLY.
                     maxAge: 86400 * 1000, // EXP in one day.
                 }
             );
@@ -156,7 +157,7 @@ router.post('/logout', (req, res) => {
         res.clearCookie('jwt', {
             httpOnly: true, //set to true in prod, false for browser testing.
             secure: false, //set to true when in prod
-            sameSite: 'Lax', //Set to "strict" for prod, Lax or None for testing and dev ONLY.
+            sameSite: "Strict" //Set to "strict" for prod, Lax or None for testing and dev ONLY.
         });
 
         return res.status(200).json(makeResponse('success', false, ['Logout successful'], false));
@@ -359,7 +360,7 @@ router.put('/verify2FA', async (req, res) => {
             res.cookie("jwt", newToken, {
                 httpOnly: true,
                 secure: false, // set to true in production
-                sameSite: "Lax", // Set to "strict" for prod
+                sameSite: "Strict", // Set to "strict" for prod
                 maxAge: 86400 * 1000, // 1 day expiration
             });
             
@@ -393,7 +394,7 @@ router.post('/verify2FALogin', async (req, res) => {
         }
         encRole = token_data.role;
 
-        const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENC_KEY), Buffer.from(iv, 'hex'));
+        const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENC_KEY, 'hex'), Buffer.from(iv, 'hex'));
         let decryptedRole = decipher.update(encRole, 'hex', 'utf8');
         decryptedRole += decipher.final('utf8');
 
@@ -413,7 +414,7 @@ router.post('/verify2FALogin', async (req, res) => {
                 {
                     httpOnly: true, //set to true in prod, false for browser testing.
                     secure: false, //set to true when in prod
-                    sameSite: "Lax", //Set to "strict" for prod, Lax or None for testing and dev ONLY.
+                    sameSite: "Strict", //Set to "strict" for prod, Lax or None for testing and dev ONLY.
                     maxAge: 86400 * 1000, // EXP in one day.
                 }
             );

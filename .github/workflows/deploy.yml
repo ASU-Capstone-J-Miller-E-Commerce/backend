@@ -6,11 +6,10 @@ on:
         description: Git ref to deploy
         default: main
         required: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      BACKEND_DIR: ~/backend           # adjust if different
     steps:
       - name: Prep SSH known_hosts
         run: |
@@ -25,10 +24,24 @@ jobs:
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           port: ${{ secrets.DROPLET_SSH_PORT || 22 }}
+          request_pty: true
+          script_stop: true
+          command_timeout: 30m
           script: |
-            set -e
-            cd ~/backend
-            git pull
+            set -euxo pipefail
+            : > ~/.hushlogin || true
+
+            command -v node >/dev/null || { echo "node not found"; exit 1; }
+            command -v npm  >/dev/null || { echo "npm not found";  exit 1; }
+            command -v pm2  >/dev/null || { echo "pm2 not found";  exit 1; }
+
+            cd /backend
+
+            git fetch origin ${{ github.event.inputs.ref || 'main' }}
+            git reset --hard origin/${{ github.event.inputs.ref || 'main' }}
+            git pull origin ${{ github.event.inputs.ref || 'main' }}
+            echo "DEPLOY COMMIT: $(git rev-parse --short HEAD)"
+
             npm ci
-            pm2 restart server || pm2 start ecosystem.config.js --only api
+            pm2 restart api || pm2 start ecosystem.config.js --only api || pm2 start npm --name api -- run start
             pm2 save

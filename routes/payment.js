@@ -1,11 +1,12 @@
-const stripe = require('stripe')(process.env.STRIPE_KEY);
 const express = require('express')
 const router = express.Router()
 const Cue = require('../models/cue')
 const Accessory = require('../models/accessory')
 const { makeError, makeResponse, makeData } = require('../response/makeResponse')
 const { authUser } = require('./authorization')
-const { sendOrderConfirmationEmail } = require('./email')
+const { sendOrderConfirmationEmail } = require('./email');
+const { getStripeKey, getAllowedOrigins } = require('../utils/environment');
+const stripe = require('stripe')(getStripeKey());
 
 
 router.post('/create-checkout-session', authUser, getCartItems, async (req, res) => {
@@ -60,15 +61,18 @@ router.post('/create-checkout-session', authUser, getCartItems, async (req, res)
         console.log('Shipping options for', req.body.shippingCountry, ':', shippingOptions);
         
         // If no shipping options are available, don't require shipping address
+        const allowedOrigins = getAllowedOrigins();
+        const originUrl = allowedOrigins[0]; // Use first allowed origin for redirects
+
         const sessionConfig = {
             customer_email: req.body.email,
             submit_type: 'pay',
             billing_address_collection: 'required', // Still collect billing for payment
             line_items: line_items,
             mode: 'payment',
-            success_url: `${process.env.ORIGIN_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${process.env.ORIGIN_URL}/checkout/cancel`,
-            
+            success_url: `${originUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${originUrl}/checkout/cancel`,
+
             // Additional customization options
             locale: 'auto', // Auto-detect customer's language
             payment_method_types: ['card'], // Accept only cards
@@ -195,8 +199,6 @@ router.get('/verify-session/:session_id', authUser, async (req, res) => {
             // New order, process normally
             console.log('Creating new order for session:', req.params.session_id);
             
-            // ... existing order details preparation code ...
-            const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent);
             const cueGuids = session.metadata.cue_guids ? JSON.parse(session.metadata.cue_guids) : [];
             const accessoryItems = session.metadata.accessory_items ? JSON.parse(session.metadata.accessory_items) : [];
 
@@ -220,7 +222,7 @@ router.get('/verify-session/:session_id', authUser, async (req, res) => {
 
             const orderDetails = {
                 sessionId: session.id,
-                paymentIntentId: paymentIntent.id,
+                paymentIntentId: session.payment_intent || 'N/A', // Handle null payment_intent
                 status: 'paid',
                 amount: session.amount_total / 100,
                 currency: session.currency,

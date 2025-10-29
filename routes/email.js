@@ -1,5 +1,6 @@
 const resetPasswordTemplate = require('../emailNotificationTemplates/resetPassword.js')
 const orderConfirmationTemplate = require('../emailNotificationTemplates/orderConfirmation.js')
+const accountCreationTemplate = require('../emailNotificationTemplates/accountCreation.js')
 const express = require('express')
 const nodemailer = require("nodemailer");
 const { makeData } = require('../response/makeResponse')
@@ -13,33 +14,32 @@ const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
 const { authUser } = require('./authorization')
 
-
-
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: 'in-v3.mailjet.com',
+  port: 2525,
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS 
+    user: process.env.MJ_USER,
+    pass: process.env.MJ_PASS
   }
 });
 
-// function to send emails
-async function sendEmail(to, subject, text, html) {
-  const mailOptions = {
-    from: `"Admin" <${process.env.EMAIL_USER}>`,
-    to,
-    subject,
-    text,
-    html
-  };
-
+// Account creation email function
+async function sendAccountCreationEmail({ email, firstName }) {
   try {
+    const subject = "Account Created - J.Miller Custom Cues";
+    const htmlContent = accountCreationTemplate(firstName, email);
+    const mailOptions = {
+      from: `"J.Miller Custom Cues" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject,
+      html: htmlContent
+    };
     const info = await transporter.sendMail(mailOptions);
-    console.log("Email sent:", info.messageId);
-    return info;
-  } catch (error) {
-    console.error("Error sending email:", error);
-    throw error;
+    console.log("Account creation email sent:", info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (ex) {
+    console.error("Error sending account creation email:", ex);
+    throw new Error('Failed to send account creation email.');
   }
 }
 
@@ -142,3 +142,4 @@ async function sendOrderConfirmationEmail({ email, orderID }) {
 
 module.exports = router;
 module.exports.sendOrderConfirmationEmail = sendOrderConfirmationEmail;
+module.exports.sendAccountCreationEmail = sendAccountCreationEmail;
