@@ -91,12 +91,8 @@ router.post("/resetPassword", async (req, res) => {
   try {
     const userRecord = await User.findOne({ email });
     if (userRecord) {
-      //Generate new password, encrypt and save.
+      // Generate new password
       const resetToken = crypto.randomBytes(8).toString("hex");
-      const passHash = await bcrypt.hash(resetToken, 10);
-      userRecord.password = passHash;
-      await userRecord.save();
-
       const subject = "Password Reset.";
       const htmlContent = resetPasswordTemplate(resetToken);
       const mailOptions = {
@@ -105,12 +101,18 @@ router.post("/resetPassword", async (req, res) => {
         subject,
         html: htmlContent
       };
-      try {
-        const info = await transporter.sendMail(mailOptions);
-        console.log("Email sent:", info.messageId);
-      } catch (emailErr) {
-        console.error("Error sending reset email:", emailErr);
-      }
+      // Send email, then update password only if successful
+      await transporter.sendMail(mailOptions)
+        .then(async (info) => {
+          console.log("Email sent:", info.messageId);
+          const passHash = await bcrypt.hash(resetToken, 10);
+          userRecord.password = passHash;
+          await userRecord.save();
+        })
+        .catch((emailErr) => {
+          console.error("Error sending reset email:", emailErr);
+          // Do not update password if email fails to send
+        });
     }
     // Always respond with success, regardless of user existence
     return res.status(200).json(makeResponse('success', false, ['If the email exists, a temporary password has been sent.'], false));
